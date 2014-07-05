@@ -19,11 +19,13 @@ package org.springframework.boot.logging;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.ApplicationPid;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.bind.RelaxedPropertyResolver;
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.ApplicationEvent;
@@ -63,7 +65,7 @@ import org.springframework.util.StringUtils;
  * <li><code>PID</code> is set to the value of the current process ID if it can be
  * determined</li>
  * </ul>
- * 
+ *
  * @author Dave Syer
  * @author Phillip Webb
  */
@@ -180,7 +182,6 @@ public class LoggingApplicationListener implements SmartApplicationListener {
 			try {
 				ResourceUtils.getURL(value).openStream().close();
 				system.initialize(value);
-				return;
 			}
 			catch (Exception ex) {
 				// Swallow exception and continue
@@ -188,10 +189,35 @@ public class LoggingApplicationListener implements SmartApplicationListener {
 			this.logger.warn("Logging environment value '" + value
 					+ "' cannot be opened and will be ignored");
 		}
+		else {
 
-		system.initialize();
-		if (this.springBootLogging != null) {
-			initializeLogLevel(system, this.springBootLogging);
+			system.initialize();
+			if (this.springBootLogging != null) {
+				initializeLogLevel(system, this.springBootLogging);
+			}
+
+		}
+
+		setLogLevels(system, environment);
+
+	}
+
+	public void setLogLevels(LoggingSystem system, Environment environment) {
+		Map<String, Object> levels = new RelaxedPropertyResolver(environment)
+				.getSubProperties("logging.level.");
+		for (Entry<String, Object> entry : levels.entrySet()) {
+			String name = entry.getKey();
+			try {
+				LogLevel level = LogLevel.valueOf(entry.getValue().toString());
+				if (name.equalsIgnoreCase("root")) {
+					name = null;
+				}
+				system.setLogLevel(name, level);
+			}
+			catch (RuntimeException e) {
+				this.logger.error("Cannot set level: " + entry.getValue() + " for '"
+						+ name + "'");
+			}
 		}
 	}
 

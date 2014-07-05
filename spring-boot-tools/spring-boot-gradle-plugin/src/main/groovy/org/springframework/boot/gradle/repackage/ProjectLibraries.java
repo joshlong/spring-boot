@@ -112,7 +112,7 @@ class ProjectLibraries implements Libraries {
 		}
 		Set<ResolvedArtifact> result = new LinkedHashSet<ResolvedArtifact>();
 		for (ResolvedArtifact artifact : source) {
-			if (!toRemove.contains(artifact.getFile())) {
+			if (!filesToRemove.contains(artifact.getFile())) {
 				result.add(artifact);
 			}
 		}
@@ -123,7 +123,8 @@ class ProjectLibraries implements Libraries {
 			LibraryCallback callback) throws IOException {
 		if (artifacts != null) {
 			for (ResolvedArtifact artifact : artifacts) {
-				callback.library(new Library(artifact.getFile(), scope, isUnpackRequired(artifact)));
+				callback.library(new Library(artifact.getFile(), scope,
+						isUnpackRequired(artifact)));
 			}
 		}
 	}

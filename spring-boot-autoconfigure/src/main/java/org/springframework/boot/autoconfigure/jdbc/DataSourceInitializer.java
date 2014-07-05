@@ -37,7 +37,7 @@ import org.springframework.util.StringUtils;
  * Bean to handle {@link DataSource} initialization by running {@literal schema-*.sql} on
  * {@link PostConstruct} and and {@literal data-*.sql} SQL scripts on a
  * {@link DataSourceInitializedEvent}.
- * 
+ *
  * @author Dave Syer
  * @author Phillip Webb
  * @since 1.1.0
@@ -135,6 +135,7 @@ class DataSourceInitializer implements ApplicationListener<DataSourceInitialized
 		ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
 		populator.setContinueOnError(this.properties.isContinueOnError());
 		populator.setSeparator(this.properties.getSeparator());
+		populator.setSqlScriptEncoding(this.properties.getSqlScriptEncoding());
 		for (Resource resource : resources) {
 			populator.addScript(resource);
 		}

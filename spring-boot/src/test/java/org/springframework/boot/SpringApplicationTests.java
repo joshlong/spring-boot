@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -78,11 +79,15 @@ import static org.mockito.Mockito.verify;
 
 /**
  * Tests for {@link SpringApplication}.
- * 
+ *
  * @author Phillip Webb
  * @author Dave Syer
+ * @author Andy Wilkinson
+ * @author Christian Dupuis
  */
 public class SpringApplicationTests {
+
+	private String headlessProperty;
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
@@ -94,6 +99,23 @@ public class SpringApplicationTests {
 			return this.context.getEnvironment();
 		}
 		throw new IllegalStateException("Could not obtain Environment");
+	}
+
+	@Before
+	public void storeAndClearHeadlessProperty() {
+		this.headlessProperty = System.getProperty("java.awt.headless");
+		System.clearProperty("java.awt.headless");
+	}
+
+	@After
+	public void reinstateHeadlessProperty() {
+		if (this.headlessProperty == null) {
+			System.clearProperty("java.awt.headless");
+		}
+		else {
+			System.setProperty("java.awt.headless", this.headlessProperty);
+		}
+
 	}
 
 	@After
@@ -138,6 +160,15 @@ public class SpringApplicationTests {
 		SpringApplication application = spy(new SpringApplication(ExampleConfig.class));
 		application.setWebEnvironment(false);
 		application.run("--banner.location=classpath:test-banner.txt");
+		verify(application, never()).printBanner();
+	}
+
+	@Test
+	public void customBannerWithProperties() throws Exception {
+		SpringApplication application = spy(new SpringApplication(ExampleConfig.class));
+		application.setWebEnvironment(false);
+		application.run("--banner.location=classpath:test-banner-with-placeholder.txt",
+				"--test.property=123456");
 		verify(application, never()).printBanner();
 	}
 
@@ -500,6 +531,15 @@ public class SpringApplicationTests {
 		TestSpringApplication application = new TestSpringApplication(ExampleConfig.class);
 		application.setWebEnvironment(false);
 		application.setHeadless(false);
+		application.run();
+		assertThat(System.getProperty("java.awt.headless"), equalTo("false"));
+	}
+
+	@Test
+	public void headlessSystemPropertyTakesPrecedence() throws Exception {
+		System.setProperty("java.awt.headless", "false");
+		TestSpringApplication application = new TestSpringApplication(ExampleConfig.class);
+		application.setWebEnvironment(false);
 		application.run();
 		assertThat(System.getProperty("java.awt.headless"), equalTo("false"));
 	}

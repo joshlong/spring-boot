@@ -18,13 +18,14 @@ package org.springframework.boot.gradle.repackage;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.bundling.Jar;
 import org.springframework.boot.gradle.SpringBootPluginExtension;
 import org.springframework.boot.loader.tools.Repackager;
@@ -35,6 +36,7 @@ import org.springframework.util.FileCopyUtils;
  *
  * @author Phillip Webb
  * @author Janne Valkealahti
+ * @author Andy Wilkinson
  */
 public class RepackageTask extends DefaultTask {
 
@@ -55,7 +57,7 @@ public class RepackageTask extends DefaultTask {
 	}
 
 	public Object getWithJarTask() {
-		return withJarTask;
+		return this.withJarTask;
 	}
 
 	public void setWithJarTask(Object withJarTask) {
@@ -67,11 +69,11 @@ public class RepackageTask extends DefaultTask {
 	}
 
 	public String getMainClass() {
-		return mainClass;
+		return this.mainClass;
 	}
 
 	public String getClassifier() {
-		return classifier;
+		return this.classifier;
 	}
 
 	public void setClassifier(String classifier) {
@@ -97,7 +99,8 @@ public class RepackageTask extends DefaultTask {
 		}
 		if (this.customConfiguration != null) {
 			libraries.setCustomConfigurationName(this.customConfiguration);
-		} else if (extension.getCustomConfiguration() != null) {
+		}
+		else if (extension.getCustomConfiguration() != null) {
 			libraries.setCustomConfigurationName(extension.getCustomConfiguration());
 		}
 		return libraries;
@@ -125,26 +128,33 @@ public class RepackageTask extends DefaultTask {
 				return;
 			}
 			Object withJarTask = RepackageTask.this.withJarTask;
-			if (isTaskMatch(jarTask, withJarTask)) {
+			if (!isTaskMatch(jarTask, withJarTask)) {
 				getLogger().info(
 						"Jar task not repackaged (didn't match withJarTask): " + jarTask);
 				return;
 			}
-			if ("".equals(jarTask.getClassifier())
-					|| RepackageTask.this.withJarTask != null) {
-				File file = jarTask.getArchivePath();
-				if (file.exists()) {
-					repackage(file);
-				}
+			File file = jarTask.getArchivePath();
+			if (file.exists()) {
+				repackage(file);
 			}
 		}
 
-		private boolean isTaskMatch(Jar task, Object compare) {
-			if (compare == null) {
+		private boolean isTaskMatch(Jar task, Object withJarTask) {
+			if (withJarTask == null) {
+				if ("".equals(task.getClassifier())) {
+					Set<Object> tasksWithCustomRepackaging = new HashSet<Object>();
+					for (RepackageTask repackageTask : RepackageTask.this.getProject()
+							.getTasks().withType(RepackageTask.class)) {
+						if (repackageTask.getWithJarTask() != null) {
+							tasksWithCustomRepackaging
+									.add(repackageTask.getWithJarTask());
+						}
+					}
+					return !tasksWithCustomRepackaging.contains(task);
+				}
 				return false;
 			}
-			TaskContainer tasks = getProject().getTasks();
-			return task.equals(compare) || task.equals(tasks.findByName(task.toString()));
+			return task.equals(withJarTask) || task.getName().equals(withJarTask);
 		}
 
 		private void repackage(File file) {
@@ -180,11 +190,13 @@ public class RepackageTask extends DefaultTask {
 			String mainClass = (String) getProject().property("mainClassName");
 			if (RepackageTask.this.mainClass != null) {
 				mainClass = RepackageTask.this.mainClass;
-			} else if (this.extension.getMainClass() != null) {
+			}
+			else if (this.extension.getMainClass() != null) {
 				mainClass = this.extension.getMainClass();
-			} else if (getProject().getTasks().getByName("run").hasProperty("main")) {
-				mainClass = (String) getProject().getTasks().getByName("run").property(
-						"main");
+			}
+			else if (getProject().getTasks().getByName("run").hasProperty("main")) {
+				mainClass = (String) getProject().getTasks().getByName("run")
+						.property("main");
 			}
 			getLogger().info("Setting mainClass: " + mainClass);
 			repackager.setMainClass(mainClass);
@@ -205,7 +217,8 @@ public class RepackageTask extends DefaultTask {
 			long startTime = System.currentTimeMillis();
 			try {
 				return super.findMainMethod(source);
-			} finally {
+			}
+			finally {
 				long duration = System.currentTimeMillis() - startTime;
 				if (duration > FIND_WARNING_TIMEOUT) {
 					getLogger().warn(
