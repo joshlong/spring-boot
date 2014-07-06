@@ -312,7 +312,7 @@
             <artifactId>aspectjweaver</artifactId>
             <optional>true</optional>
         </dependency>
-
+        <!-- JTA -->
         <dependency>
             <groupId>com.atomikos</groupId>
             <artifactId>transactions-jta</artifactId>

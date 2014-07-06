@@ -13,6 +13,7 @@ import javax.sql.DataSource;
 import javax.sql.XADataSource;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.BiConsumer;
 
 @Configuration
 @EnableAutoConfiguration
@@ -24,27 +25,32 @@ public class AtomikosJtaAutoConfigurationTests {
     }
 
     @Bean
-    DataSource xaDataSource (){
-     AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
+    DataSource xaDataSource() {
+        AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
         ds.setUniqueResourceName("h2");
 //        ds.setXaDataSource( dataSources[0]);
         ds.setXaDataSourceClassName("oracle.jdbc.xa.client.OracleXADataSource");
         Properties p = new Properties();
-        p.setProperty ( "user" , "java" );
-        p.setProperty ( "password" , "java" );
-        p.setProperty ( "URL" , "jdbc:oracle:thin:@localhost-xe:1521:XE" );
-        ds.setXaProperties ( p );
-        ds.setPoolSize ( 5 );
-        return ds ;
+        p.setProperty("user", "java");
+        p.setProperty("password", "java");
+        p.setProperty("URL", "jdbc:oracle:thin:@localhost-xe:1521:XE");
+        ds.setXaProperties(p);
+        ds.setPoolSize(5);
+        return ds;
     }
+
     @Bean
     CommandLineRunner init(final Map<String, XADataSource> xaDataSource) {
         return new CommandLineRunner() {
             @Override
             public void run(String... args) throws Exception {
-                for (String xaDSBeanName : xaDataSource.keySet()) {
-                    System.out.println("XDDataSource " + xaDSBeanName + "=" + xaDataSource.get(xaDSBeanName));
-                }
+                xaDataSource.forEach(new BiConsumer<String, XADataSource>() {
+                    @Override
+                    public void accept(String s, XADataSource xaDataSource) {
+                        System.out.println(s + '=' + xaDataSource.getClass().getName());
+                    }
+                });
+
             }
         };
     }
