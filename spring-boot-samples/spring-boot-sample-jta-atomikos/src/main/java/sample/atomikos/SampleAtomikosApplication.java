@@ -29,7 +29,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableAutoConfiguration
 public class SampleAtomikosApplication {
 
-
+ 
 
     public static void main(String[] args) {
         SpringApplication.run(SampleAtomikosApplication .class, args);
@@ -64,7 +64,7 @@ public class SampleAtomikosApplication {
         xaDS.setUniqueResourceName("xaDataSource");
         xaDS.setTestQuery("select now()");
         xaDS.setXaProperties(properties);
-        xaDS.setXaDataSourceClassName(Driv);
+      ///  xaDS.setXaDataSourceClassName(Driv);
         xaDS.setMaxPoolSize(20);
         xaDS.setMinPoolSize(10);
 
