@@ -133,6 +133,11 @@
                 <version>${atomikos.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.atomikos</groupId>
+                <artifactId>transactions-hibernate3</artifactId>
+                <version>${atomikos.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.jboss.spec.javax.transaction</groupId>
                 <artifactId>jboss-transaction-api_1.1_spec</artifactId>
                 <version>1.0.1.Final</version>

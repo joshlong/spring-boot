@@ -301,7 +301,6 @@
             <artifactId>reactor-spring-context</artifactId>
             <optional>true</optional>
         </dependency>
-
         <dependency>
             <groupId>javax.jms</groupId>
             <artifactId>jms-api</artifactId>
@@ -319,6 +318,11 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>com.atomikos</groupId>
+            <artifactId>transactions-hibernate3</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.spec.javax.transaction</groupId>
             <artifactId>jboss-transaction-api_1.1_spec</artifactId>
             <optional>true</optional>
@@ -328,6 +332,7 @@
             <artifactId>transactions-jdbc</artifactId>
             <optional>true</optional>
         </dependency>
+
         <dependency>
             <groupId>com.atomikos</groupId>
             <artifactId>transactions-jms</artifactId>

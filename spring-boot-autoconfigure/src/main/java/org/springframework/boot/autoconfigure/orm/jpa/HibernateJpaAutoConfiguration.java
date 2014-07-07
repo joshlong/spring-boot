@@ -58,9 +58,6 @@ public class HibernateJpaAutoConfiguration extends JpaBaseConfiguration {
 	@Autowired
 	private DataSource dataSource;
 
-	@Autowired
-	private ConfigurableApplicationContext applicationContext;
-
 	@Override
 	protected AbstractJpaVendorAdapter createJpaVendorAdapter() {
 		return new HibernateJpaVendorAdapter();
@@ -71,7 +68,7 @@ public class HibernateJpaAutoConfiguration extends JpaBaseConfiguration {
 		return this.properties.getHibernateProperties(this.dataSource);
 	}
 
-	static class HibernateEntityManagerCondition extends SpringBootCondition {
+	public static class HibernateEntityManagerCondition extends SpringBootCondition {
 
 		private static String[] CLASS_NAMES = {
 				"org.hibernate.ejb.HibernateEntityManager",

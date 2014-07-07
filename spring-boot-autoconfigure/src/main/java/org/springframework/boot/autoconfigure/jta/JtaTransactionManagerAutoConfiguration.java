@@ -2,19 +2,26 @@ package org.springframework.boot.autoconfigure.jta;
 
 import com.atomikos.icatch.admin.LogAdministrator;
 import com.atomikos.icatch.standalone.UserTransactionServiceFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 import javax.jms.XAConnectionFactory;
 import javax.sql.XADataSource;
 import javax.transaction.SystemException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -44,19 +51,34 @@ public class JtaTransactionManagerAutoConfiguration {
     public static final String WELL_KNOWN_TRANSACTION_MANAGER_BEAN_NAME = "transactionManager";
 
 
+    static void addEnvironmentProperty(ConfigurableEnvironment environment, Map<String, Object> props) {
+        MapPropertySource propertySource = new MapPropertySource("jta", props);
+        environment.getPropertySources().addFirst(propertySource);
+    }
+
     // configure Atomikos
     @Configuration
-    @ConditionalOnClass(com.atomikos.icatch.jta.UserTransactionImp.class)
+    @ConditionalOnClass({com.atomikos.icatch.jta.UserTransactionImp.class})
     public static class AtomikosJtaAutoConfiguration {
 
-        // @Autowired
-        public void customizeHibernateIfRequired(ConfigurableApplicationContext configurableApplicationContext) {
-            //properties.set("hibernate.transaction.manager_lookup_class", TransactionManagerLookup.class.getName());
+        @Configuration
+        @ConditionalOnClass(com.atomikos.icatch.jta.hibernate3.TransactionManagerLookup.class)
+        @Conditional(HibernateJpaAutoConfiguration.HibernateEntityManagerCondition.class)
+        public static class HibernateAtomikosJtaAutoConfiguration {
+            @Autowired
+            public void customizeHibernateIfRequired(ConfigurableApplicationContext appContext) {
+                Map<String, Object> props = new HashMap<String, Object>();
+                props.put("hibernate.transaction.factory_class", com.atomikos.icatch.jta.hibernate3.AtomikosJTATransactionFactory.class.getName());
+                props.put("hibernate.transaction.manager_lookup_class", com.atomikos.icatch.jta.hibernate3.TransactionManagerLookup.class.getName());
+                addEnvironmentProperty(appContext.getEnvironment(), props);
+            }
         }
 
 
+
+
         /*	<bean id="broker" class="org.apache.activemq.xbean.BrokerFactoryBean" >
-		<property name="config" value="classpath:activemq.xml" />
+        <property name="config" value="classpath:activemq.xml" />
 		<property name="start" value="true" />
 	</bean>
 	<!-- ATE -->
@@ -206,8 +228,7 @@ public class JtaTransactionManagerAutoConfiguration {
         @Bean(destroyMethod = "close")
         @ConditionalOnMissingBean
         public com.atomikos.icatch.jta.UserTransactionManager atomikosTransactionManager() throws SystemException {
-            com.atomikos.icatch.jta.UserTransactionManager userTransactionManager
-                    = new com.atomikos.icatch.jta.UserTransactionManager();
+            com.atomikos.icatch.jta.UserTransactionManager userTransactionManager = new com.atomikos.icatch.jta.UserTransactionManager();
             userTransactionManager.setForceShutdown(false);
             userTransactionManager.setStartupTransactionService(false);
             userTransactionManager.init();

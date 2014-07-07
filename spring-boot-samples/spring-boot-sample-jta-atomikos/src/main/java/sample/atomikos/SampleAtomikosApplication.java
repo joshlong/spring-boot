@@ -1,35 +1,41 @@
-package org.springframework.boot.autoconfigure.jta;
+package sample.atomikos;
 
-
-import com.atomikos.jdbc.AtomikosDataSourceBean;
-import com.atomikos.jms.AtomikosConnectionFactoryBean;
+ import com.atomikos.jdbc.AtomikosDataSourceBean;
+ import com.atomikos.jms.AtomikosConnectionFactoryBean;
 import com.atomikos.jms.extra.MessageDrivenContainer;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
+ import org.slf4j.LoggerFactory;
+ import org.springframework.boot.CommandLineRunner;
+ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.sql.DataSource;
-import javax.sql.XADataSource;
-import java.util.Map;
-import java.util.Properties;
-import java.util.function.BiConsumer;
+ import javax.jms.Message;
+ import javax.jms.MessageListener;
+ import javax.sql.DataSource;
+ import javax.sql.XADataSource;
+ import java.util.Map;
+ import java.util.Properties;
+ import java.util.function.BiConsumer;
 
+/**
+ * Demonstrates how to use Atomikos and JTA
+ *
+ * @author Josh Long
+ */
 @Configuration
-@EnableAutoConfiguration
 @ComponentScan
-public class AtomikosJtaAutoConfigurationTests {
+@EnableAutoConfiguration
+public class SampleAtomikosApplication {
 
-  /*  public static void main(String[] args) {
-        SpringApplication.run(AtomikosJtaAutoConfigurationTests.class, args);
+
+
+    public static void main(String[] args) {
+        SpringApplication.run(SampleAtomikosApplication .class, args);
     }
 
-    *//*
+
     @Bean
     MessageDrivenContainer messageDrivenContainer(AtomikosConnectionFactoryBean connectionFactoryBean) {
         MessageDrivenContainer mdc = new MessageDrivenContainer();
@@ -42,7 +48,7 @@ public class AtomikosJtaAutoConfigurationTests {
         });
         return mdc;
     }
-    *//*
+
 
 
     @Bean(initMethod = "init", destroyMethod = "close")
@@ -79,5 +85,6 @@ public class AtomikosJtaAutoConfigurationTests {
 
             }
         };
-    }*/
+    }
+
 }
