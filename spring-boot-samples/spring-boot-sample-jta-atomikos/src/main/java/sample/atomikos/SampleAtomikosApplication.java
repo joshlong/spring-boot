@@ -1,23 +1,22 @@
 package sample.atomikos;
 
- import com.atomikos.jdbc.AtomikosDataSourceBean;
- import com.atomikos.jms.AtomikosConnectionFactoryBean;
-import com.atomikos.jms.extra.MessageDrivenContainer;
- import org.slf4j.LoggerFactory;
- import org.springframework.boot.CommandLineRunner;
- import org.springframework.boot.SpringApplication;
+import com.atomikos.jdbc.AtomikosDataSourceBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
 
- import javax.jms.Message;
- import javax.jms.MessageListener;
- import javax.sql.DataSource;
- import javax.sql.XADataSource;
- import java.util.Map;
- import java.util.Properties;
- import java.util.function.BiConsumer;
+import javax.sql.DataSource;
+import javax.sql.XADataSource;
+import java.net.UnknownHostException;
+import java.util.Map;
+import java.util.Properties;
+import java.util.function.BiConsumer;
 
 /**
  * Demonstrates how to use Atomikos and JTA
@@ -29,15 +28,13 @@ import org.springframework.context.annotation.Configuration;
 @EnableAutoConfiguration
 public class SampleAtomikosApplication {
 
- 
-
     public static void main(String[] args) {
-        SpringApplication.run(SampleAtomikosApplication .class, args);
+        SpringApplication.run(SampleAtomikosApplication.class, args);
     }
 
-
+    /*
     @Bean
-    MessageDrivenContainer messageDrivenContainer(AtomikosConnectionFactoryBean connectionFactoryBean) {
+    public MessageDrivenContainer messageDrivenContainer(AtomikosConnectionFactoryBean connectionFactoryBean) {
         MessageDrivenContainer mdc = new MessageDrivenContainer();
         mdc.setAtomikosConnectionFactoryBean(connectionFactoryBean);
         mdc.setMessageListener(new MessageListener() {
@@ -48,14 +45,12 @@ public class SampleAtomikosApplication {
         });
         return mdc;
     }
-
-
+    */
 
     @Bean(initMethod = "init", destroyMethod = "close")
-    DataSource xaDataSource() {
+    public AtomikosDataSourceBean xaDataSource() throws UnknownHostException {
         Properties properties = new Properties();
         properties.setProperty("ServerName", "127.0.0.1");
-        properties.setProperty("PortNumber", "5432");
         properties.setProperty("DatabaseName", "crm");
         properties.setProperty("User", "crm");
         properties.setProperty("Password", "crm");
@@ -64,22 +59,28 @@ public class SampleAtomikosApplication {
         xaDS.setUniqueResourceName("xaDataSource");
         xaDS.setTestQuery("select now()");
         xaDS.setXaProperties(properties);
-      ///  xaDS.setXaDataSourceClassName(Driv);
+        Class<? extends XADataSource> aClass = org.postgresql.xa.PGXADataSource.class;
+        xaDS.setXaDataSourceClassName(aClass.getName());
         xaDS.setMaxPoolSize(20);
         xaDS.setMinPoolSize(10);
-
         return xaDS;
     }
 
+
     @Bean
-    CommandLineRunner init(final Map<String, XADataSource> xaDataSource) {
+    public CommandLineRunner init(
+            final JdbcTemplate jdbcTemplate,
+            final Map<String, DataSource> xaDataSource) {
         return new CommandLineRunner() {
             @Override
             public void run(String... args) throws Exception {
-                xaDataSource.forEach(new BiConsumer<String, XADataSource>() {
+
+                log().info("jdbcTemplate: " + jdbcTemplate.toString());
+
+                xaDataSource.forEach(new BiConsumer<String, DataSource>() {
                     @Override
-                    public void accept(String s, XADataSource xaDataSource) {
-                        System.out.println(s + '=' + xaDataSource.getClass().getName());
+                    public void accept(String s, DataSource xaDataSource) {
+                        log().info(s + '=' + xaDataSource.getClass().getName());
                     }
                 });
 
@@ -87,4 +88,7 @@ public class SampleAtomikosApplication {
         };
     }
 
+    private static Logger log() {
+        return LoggerFactory.getLogger(SampleAtomikosApplication.class);
+    }
 }
