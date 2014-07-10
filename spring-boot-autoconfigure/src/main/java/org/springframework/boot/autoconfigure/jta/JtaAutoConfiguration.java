@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -63,6 +64,7 @@ import org.springframework.context.annotation.*;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.type.AnnotatedTypeMetadata;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -102,12 +104,10 @@ import java.util.concurrent.atomic.AtomicReference;
 @ConditionalOnClass(JtaTransactionManager.class)
 public class JtaAutoConfiguration {
 
-
     private final static AtomicReference<JtaTransactionManager> JTA_TRANSACTION_MANAGER =
             new AtomicReference<JtaTransactionManager>();
 
-
-    public static final Logger logger = LoggerFactory.getLogger(JtaAutoConfiguration.class);
+    private static final Logger logger = LoggerFactory.getLogger(JtaAutoConfiguration.class);
 
     /**
      * Are we running in an environment that has basic JTA-capable types on the CLASSPATH
@@ -137,52 +137,63 @@ public class JtaAutoConfiguration {
     }
 
     /**
-     * Are we running inside a Java EE environment where we want to look up
-     * the important bits through a well known JNDI context? Try it and see if it works!
+     * Are we running inside a Java EE environment with {@link javax.transaction.UserTransaction} and
+     * possibly {@link javax.transaction.TransactionManager} bound to well-known contexts like JNDI?
      */
-    public static class JavaEeEnvironmentJtaCondition extends SpringBootCondition {
+    public static class JavaEeJtaCondition extends SpringBootCondition {
         @Override
         public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
+
             try {
                 JtaTransactionManager jtaTransactionManager = new JtaTransactionManager();
                 jtaTransactionManager.setAutodetectTransactionManager(true);
+                jtaTransactionManager.setAutodetectTransactionSynchronizationRegistry(true);
                 jtaTransactionManager.setAutodetectUserTransaction(true);
                 jtaTransactionManager.afterPropertiesSet();
-                // made it this far, so the setup should've succeeded.
-                return ConditionOutcome.match();
             } catch (IllegalStateException e) {
-                return ConditionOutcome.noMatch(String.format("couldn't initialize a %s correctly: %s",
-                        JtaTransactionManager.class.getName(), e.getMessage()));
+                return ConditionOutcome.noMatch("could't find the required javax.transaction.* types " +
+                        "in well-known contexts like JNDI. This doesn't appear to be a Java EE environment.");
             }
+            return ConditionOutcome.match();
+
         }
     }
 
-    @Autowired(required = false)
-    private TransactionManager[] transactionManagers;
+    @Conditional(JavaEeJtaCondition.class)
+    @Configuration
+    public static class JavaEeJtaAutoConfiguration {
 
-    @Autowired(required = false)
-    private UserTransaction[] userTransactions;
+        @Bean(name = "transactionManager")
+        @ConditionalOnMissingBean(value = PlatformTransactionManager.class)
+        public JtaTransactionManager jtaTransactionManager() {
+            JtaTransactionManager jtaTransactionManager = new JtaTransactionManager();
+            jtaTransactionManager.setAutodetectTransactionManager(true);
+            jtaTransactionManager.setAutodetectTransactionSynchronizationRegistry(true);
+            jtaTransactionManager.setAutodetectUserTransaction(true);
 
-    @Bean(name = "transactionManager")
-    @ConditionalOnMissingBean(value = PlatformTransactionManager.class)
-    public JtaTransactionManager transactionManager() {
-        JtaTransactionManager jtaTransactionManager = new JtaTransactionManager();
+            return jtaTransactionManager;
+        }
+    }
 
-        if (this.userTransactions.length > 0)
-            jtaTransactionManager.setUserTransaction(this.userTransactions[0]);
 
-        if (this.transactionManagers.length > 0)
-            jtaTransactionManager.setTransactionManager(this.transactionManagers[0]);
-
+    protected static JtaTransactionManager initJtaTransactionManager(UserTransaction userTransaction, TransactionManager transactionManager) {
+        JtaTransactionManager jtaTransactionManager = new JtaTransactionManager(userTransaction, transactionManager);
         jtaTransactionManager.setAllowCustomIsolationLevels(true);
 
         JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
+
         return jtaTransactionManager;
     }
 
     @Configuration
-    @ConditionalOnClass({com.atomikos.icatch.jta.UserTransactionManager.class })
+    @ConditionalOnClass({com.atomikos.icatch.jta.UserTransactionManager.class})
     public static class AtomikosAutoConfiguration {
+
+        @Bean(name = "transactionManager")
+        @ConditionalOnMissingBean(value = PlatformTransactionManager.class)
+        public JtaTransactionManager transactionManager(UserTransactionImp userTransaction, UserTransactionManager transactionManager) {
+            return initJtaTransactionManager(userTransaction, transactionManager);
+        }
 
         @Bean(initMethod = "init", destroyMethod = "shutdownForce")
         @ConditionalOnMissingBean
@@ -232,13 +243,13 @@ public class JtaAutoConfiguration {
 
         @Bean(initMethod = "init", destroyMethod = "close")
         @ConditionalOnMissingBean
-        public TransactionManager atomikosTransactionManager() throws SystemException {
+        public UserTransactionManager atomikosTransactionManager() throws SystemException {
             return new UserTransactionManager();
         }
 
         @Bean
         @ConditionalOnMissingBean
-        public UserTransaction atomikosUserTransaction() throws SystemException {
+        public UserTransactionImp atomikosUserTransaction() throws SystemException {
             UserTransactionImp uti = new UserTransactionImp();
             uti.setTransactionTimeout(10000);
             return uti;
@@ -285,8 +296,8 @@ public class JtaAutoConfiguration {
             /**
              * Implements the Hibernate {@link org.hibernate.engine.transaction.jta.platform.internal.AbstractJtaPlatform }
              * hook that tells Hibernate where it can find valid references to a JTA {@link javax.transaction.TransactionManager}
-             * and a JTA {@link javax.transaction.UserTransaction}. This interface sucks. It's
-             * configured as a property that accepts a class name. There doesn't appear to be anyway to
+             * and a JTA {@link javax.transaction.UserTransaction}. Hibernate expects this class as a
+             * property in a property file that accepts a class name. There doesn't appear to be anyway to
              * provide a pre-configured (for example, from dependency injection) reference. So, we resort to global
              * tricks like this atomic reference.
              */

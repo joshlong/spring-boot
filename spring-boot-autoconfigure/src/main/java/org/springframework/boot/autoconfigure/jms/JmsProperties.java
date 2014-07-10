@@ -28,8 +28,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class JmsProperties {
 
 	private boolean pubSubDomain = false;
+    private boolean sessionTransacted  = false;
 
-	public boolean isPubSubDomain() {
+    public boolean isSessionTransacted() {
+        return sessionTransacted;
+    }
+
+    public void setSessionTransacted(boolean sessionTransacted) {
+        this.sessionTransacted = sessionTransacted;
+    }
+
+    public boolean isPubSubDomain() {
 		return this.pubSubDomain;
 	}
 

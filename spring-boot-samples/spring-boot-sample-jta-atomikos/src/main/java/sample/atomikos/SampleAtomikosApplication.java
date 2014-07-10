@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.jms.ConnectionFactory;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
 import javax.persistence.GeneratedValue;
@@ -33,7 +32,8 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * Demonstrates how to use Atomikos and JTA
+ * Demonstrates how to use Atomikos and JTA together to coordinate a transaction database connection (to PostgreSQL)
+ * and a transactional Message Queue connection (to ActiveMQ, in this case)
  *
  * @author Josh Long
  */
@@ -67,13 +67,6 @@ public class SampleAtomikosApplication {
         return xaCF;
     }
 
-    @Bean
-    public JmsTemplate jmsTemplate(ConnectionFactory connectionFactory) {
-        JmsTemplate jmsTemplate = new JmsTemplate(connectionFactory);
-        jmsTemplate.setSessionTransacted(true);
-        jmsTemplate.setReceiveTimeout(100);
-        return jmsTemplate;
-    }
 
     private static javax.jms.XAConnectionFactory connectionFactory(String url) {
         return new ActiveMQXAConnectionFactory(url);
@@ -98,7 +91,7 @@ public class SampleAtomikosApplication {
 
                 logger.info(accountService.createAccount("pwebb", false).toString());
                 logger.info(accountService.createAccount("dsyer", false).toString());
-                logger.info(accountService.createAccount("jlong", true).toString());
+                logger.info(accountService.createAccount("jlong", false).toString());
 
                 List<Account> accountList = jdbcTemplate.query(
                         "select * from account", new RowMapper<Account>() {
