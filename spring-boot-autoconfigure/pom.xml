@@ -323,8 +323,8 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.transaction</groupId>
-            <artifactId>jboss-transaction-api_1.1_spec</artifactId>
+            <groupId>com.atomikos</groupId>
+            <artifactId>transactions-jms</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -332,12 +332,12 @@
             <artifactId>transactions-jdbc</artifactId>
             <optional>true</optional>
         </dependency>
-
         <dependency>
-            <groupId>com.atomikos</groupId>
-            <artifactId>transactions-jms</artifactId>
+            <groupId>org.jboss.spec.javax.transaction</groupId>
+            <artifactId>jboss-transaction-api_1.1_spec</artifactId>
             <optional>true</optional>
         </dependency>
+
         <dependency>
             <groupId>org.jboss.narayana.jta</groupId>
             <artifactId>narayana-jta</artifactId>

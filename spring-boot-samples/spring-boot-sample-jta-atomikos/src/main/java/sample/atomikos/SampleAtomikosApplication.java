@@ -1,6 +1,5 @@
 package sample.atomikos;
 
-import com.atomikos.icatch.jta.UserTransactionImp;
 import com.atomikos.icatch.jta.UserTransactionManager;
 import com.atomikos.jdbc.AtomikosDataSourceBean;
 import com.atomikos.jms.AtomikosConnectionFactoryBean;
@@ -33,7 +32,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jms.core.JmsTemplate;
-import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -65,9 +63,16 @@ import java.util.*;
 @EnableAutoConfiguration
 public class SampleAtomikosApplication {
 
+    public static final Logger logger = LoggerFactory.getLogger(SampleAtomikosApplication.class);
+
+    public static void main(String[] args) {
+        SpringApplication.run(SampleAtomikosApplication.class, args);
+    }
+
     @Configuration
     @AutoConfigureAfter(DataSourceAutoConfiguration.class)
-    public static class HibernateJpaJtaAutoConfiguration implements BeanFactoryAware {
+    public static class HibernateJpaJtaAutoConfiguration
+            implements BeanFactoryAware {
 
         private BeanFactory beanFactory;
 
@@ -81,7 +86,8 @@ public class SampleAtomikosApplication {
 
         private Map<String, String> getVendorProperties(DataSource dataSource, JpaProperties jpaProperties) {
             Map<String, String> vendorProperties = jpaProperties.getHibernateProperties(dataSource);
-            vendorProperties.put("hibernate.transaction.jta.platform", SampleAtomikosApplication.AtomikosJtaPlatform.class.getName());
+            vendorProperties.put("hibernate.transaction.jta.platform",
+                    SampleAtomikosApplication.AtomikosJtaPlatform.class.getName());
             vendorProperties.put("javax.persistence.transactionType", "JTA");
             return vendorProperties;
         }
@@ -89,10 +95,12 @@ public class SampleAtomikosApplication {
         @Bean
         @Primary
         @ConditionalOnMissingBean
-        public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource, JpaProperties jpaProperties, EntityManagerFactoryBuilder factory) {
+        public LocalContainerEntityManagerFactoryBean entityManagerFactory(
+                DataSource dataSource,
+                JpaProperties jpaProperties,
+                EntityManagerFactoryBuilder factory) {
             Map<String, String> vals = getVendorProperties(dataSource, jpaProperties);
-            return factory.dataSource(dataSource).packages(getPackagesToScan())
-                    .properties(vals).build();
+            return factory.dataSource(dataSource).packages(getPackagesToScan()).properties(vals).build();
         }
 
         @Override
@@ -101,36 +109,32 @@ public class SampleAtomikosApplication {
         }
     }
 
+    private final static ThreadLocal<TransactionManager> TRANSACTION_MANAGER_THREAD_LOCAL =
+            new ThreadLocal<TransactionManager>();
+
+    private final static ThreadLocal<UserTransaction> USER_TRANSACTION_THREAD_LOCAL =
+            new ThreadLocal<UserTransaction>();
 
     public static class AtomikosJtaPlatform extends AbstractJtaPlatform {
 
         private static final long serialVersionUID = 1L;
-        private static TransactionManager transactionManager;
-        private static UserTransaction transaction;
-
-        static void transaction(UserTransaction transaction) {
-            AtomikosJtaPlatform.transaction = transaction;
-        }
-
-        static void transactionManager(TransactionManager transactionManager) {
-            AtomikosJtaPlatform.transactionManager = transactionManager;
-        }
 
         @Override
         protected TransactionManager locateTransactionManager() {
-            return transactionManager;
+            return TRANSACTION_MANAGER_THREAD_LOCAL.get();
         }
 
         @Override
         protected UserTransaction locateUserTransaction() {
-            return transaction;
+            return USER_TRANSACTION_THREAD_LOCAL.get();
         }
     }
 
 
-    public static final Logger logger = LoggerFactory.getLogger(SampleAtomikosApplication.class);
+
 
     private static Properties wellKnownAtomikosProperties(ConfigurableEnvironment environment) {
+
         List<String> wellKnownAtomikosSystemProperties = Arrays.asList(
                 "com.atomikos.icatch.automatic_resource_registration",
                 "com.atomikos.icatch.client_demarcation",
@@ -182,9 +186,6 @@ public class SampleAtomikosApplication {
         return stringObjectMap;
     }
 
-    public static void main(String[] args) {
-        SpringApplication.run(SampleAtomikosApplication.class, args);
-    }
 
     @Bean(initMethod = "init", destroyMethod = "close")
     public AtomikosConnectionFactoryBean xaConnectionFactory() {
@@ -221,42 +222,24 @@ public class SampleAtomikosApplication {
         return new com.atomikos.icatch.config.UserTransactionServiceImp(properties);
     }
 
-    @Bean
-    @ConditionalOnMissingBean
-    public LocalContainerEntityManagerFactoryBean entityManagerFactoryBean(JpaVendorAdapter jpaVendorAdapter,
-                                                                           DataSource dataSource) throws Throwable {
-
-
-        HashMap<String, Object> properties = new HashMap<String, Object>();
-        properties.put("hibernate.transaction.jta.platform", AtomikosJtaPlatform.class.getName());
-        properties.put("javax.persistence.transactionType", "JTA");
-
-        LocalContainerEntityManagerFactoryBean entityManager = new LocalContainerEntityManagerFactoryBean();
-        entityManager.setJtaDataSource(dataSource);
-        entityManager.setJpaVendorAdapter(jpaVendorAdapter);
-        entityManager.setPackagesToScan("com.at.mul.domain.order");
-        entityManager.setPersistenceUnitName("orderPersistenceUnit");
-        entityManager.setJpaPropertyMap(properties);
-        return entityManager;
-    }
-
     @Bean(initMethod = "init", destroyMethod = "close")
     @ConditionalOnMissingBean
     public com.atomikos.icatch.jta.UserTransactionManager atomikosUserTransactionManager() throws SystemException {
         UserTransactionManager userTransactionManager = new UserTransactionManager();
 
-        AtomikosJtaPlatform.transactionManager(userTransactionManager);
+        //  AtomikosJtaPlatform.transactionManager(userTransactionManager);
 
         return userTransactionManager;
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public UserTransactionImp atomikosUserTransaction() throws SystemException {
-        UserTransactionImp userTransactionImp = new UserTransactionImp();
+    public com.atomikos.icatch.jta.UserTransactionImp atomikosUserTransaction() throws SystemException {
+        com.atomikos.icatch.jta.UserTransactionImp userTransactionImp =
+                new com.atomikos.icatch.jta.UserTransactionImp();
         userTransactionImp.setTransactionTimeout(10000);
 
-        AtomikosJtaPlatform.transaction(userTransactionImp);
+        // AtomikosJtaPlatform.transaction(userTransactionImp);
 
         return userTransactionImp;
     }
@@ -274,12 +257,16 @@ public class SampleAtomikosApplication {
     @ConditionalOnMissingBean(value = PlatformTransactionManager.class)
     public JtaTransactionManager transactionManager(com.atomikos.icatch.jta.UserTransactionManager atomikosTransactionManager,
                                                     com.atomikos.icatch.jta.UserTransactionImp atomikosUserTransaction) {
+
         JtaTransactionManager jtaTransactionManager = new JtaTransactionManager(atomikosUserTransaction, atomikosTransactionManager);
         jtaTransactionManager.setAllowCustomIsolationLevels(true);
 
+        TRANSACTION_MANAGER_THREAD_LOCAL.set(atomikosTransactionManager);
+        USER_TRANSACTION_THREAD_LOCAL.set(atomikosUserTransaction);
+
         // make sure the JtaPlatform is working
-        AtomikosJtaPlatform.transaction ( atomikosUserTransaction);
-        AtomikosJtaPlatform.transactionManager ( atomikosTransactionManager);
+        // AtomikosJtaPlatform.transaction(atomikosUserTransaction);
+        // AtomikosJtaPlatform.transactionManager(atomikosTransactionManager);
 
         return jtaTransactionManager;
     }
