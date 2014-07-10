@@ -63,14 +63,12 @@ import org.springframework.context.annotation.*;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.type.AnnotatedTypeMetadata;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.jta.JtaTransactionManager;
 import org.springframework.util.ClassUtils;
 
-import javax.jms.ConnectionFactory;
 import javax.sql.DataSource;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -153,19 +151,17 @@ public class JtaAutoConfiguration {
                 // made it this far, so the setup should've succeeded.
                 return ConditionOutcome.match();
             } catch (IllegalStateException e) {
-                return ConditionOutcome.noMatch("couldn't initialize a " +
-                        JtaTransactionManager.class.getName() + " correctly." + e.getMessage());
+                return ConditionOutcome.noMatch(String.format("couldn't initialize a %s correctly: %s",
+                        JtaTransactionManager.class.getName(), e.getMessage()));
             }
         }
     }
-
 
     @Autowired(required = false)
     private TransactionManager[] transactionManagers;
 
     @Autowired(required = false)
     private UserTransaction[] userTransactions;
-
 
     @Bean(name = "transactionManager")
     @ConditionalOnMissingBean(value = PlatformTransactionManager.class)
@@ -185,7 +181,7 @@ public class JtaAutoConfiguration {
     }
 
     @Configuration
-    @ConditionalOnClass({com.atomikos.icatch.jta.UserTransactionManager.class,})
+    @ConditionalOnClass({com.atomikos.icatch.jta.UserTransactionManager.class })
     public static class AtomikosAutoConfiguration {
 
         @Bean(initMethod = "init", destroyMethod = "shutdownForce")
