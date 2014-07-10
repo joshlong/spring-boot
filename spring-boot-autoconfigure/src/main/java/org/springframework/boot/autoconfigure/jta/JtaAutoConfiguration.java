@@ -46,8 +46,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -64,7 +62,6 @@ import org.springframework.context.annotation.*;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.type.AnnotatedTypeMetadata;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -159,8 +156,8 @@ public class JtaAutoConfiguration {
         }
     }
 
-    @Conditional(JavaEeJtaCondition.class)
     @Configuration
+    @Conditional(JavaEeJtaCondition.class)
     public static class JavaEeJtaAutoConfiguration {
 
         @Bean(name = "transactionManager")
@@ -170,19 +167,8 @@ public class JtaAutoConfiguration {
             jtaTransactionManager.setAutodetectTransactionManager(true);
             jtaTransactionManager.setAutodetectTransactionSynchronizationRegistry(true);
             jtaTransactionManager.setAutodetectUserTransaction(true);
-
             return jtaTransactionManager;
         }
-    }
-
-
-    protected static JtaTransactionManager initJtaTransactionManager(UserTransaction userTransaction, TransactionManager transactionManager) {
-        JtaTransactionManager jtaTransactionManager = new JtaTransactionManager(userTransaction, transactionManager);
-        jtaTransactionManager.setAllowCustomIsolationLevels(true);
-
-        JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
-
-        return jtaTransactionManager;
     }
 
     @Configuration
@@ -322,105 +308,12 @@ public class JtaAutoConfiguration {
         environment.getPropertySources().addFirst(new MapPropertySource("jta", props));
     }
 
+    protected static JtaTransactionManager initJtaTransactionManager(UserTransaction userTransaction, TransactionManager transactionManager) {
+        JtaTransactionManager jtaTransactionManager = new JtaTransactionManager(userTransaction, transactionManager);
+        jtaTransactionManager.setAllowCustomIsolationLevels(true);
+
+        JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
+
+        return jtaTransactionManager;
+    }
 }
-
-
-
-/*
-
-    private static Log logger = LogFactory.getLog(JtaAutoConfiguration.class);
-
-    public static void addEnvironmentProperties(ConfigurableEnvironment environment, Map<String, Object> props) {
-        environment.getPropertySources().addFirst(new MapPropertySource("jta", props));
-    }
-
-    // configure the third party Atomikos JTA support
-    @Configuration
-    @ConditionalOnClass(com.atomikos.icatch.jta.UserTransactionImp.class)
-    public static class AtomikosJtaAutoConfiguration {
-
-        @Autowired(required = false)
-        private LogAdministrator[] logAdministrators;
-
-        @Configuration
-        @ConditionalOnClass({com.atomikos.icatch.jta.hibernate3.TransactionManagerLookup.class, LocalContainerEntityManagerFactoryBean.class, EnableTransactionManagement.class, EntityManager.class})
-        @Conditional(HibernateJpaAutoConfiguration.HibernateEntityManagerCondition.class)
-        @AutoConfigureAfter(DataSourceAutoConfiguration.class)
-        @AutoConfigureBefore(HibernateJpaAutoConfiguration.class)
-        public static class HibernateAtomikosJtaAutoConfiguration {
-
-            @Autowired
-            public void customizeHibernateIfRequired(ConfigurableApplicationContext appContext) {
-                Map<String, Object> props = new HashMap<String, Object>();
-                props.put("hibernate.transaction.factory_class", com.atomikos.icatch.jta.hibernate3.AtomikosJTATransactionFactory.class.getName());
-                props.put("hibernate.transaction.manager_lookup_class", com.atomikos.icatch.jta.hibernate3.TransactionManagerLookup.class.getName());
-                addEnvironmentProperties(appContext.getEnvironment(), props);
-            }
-        }
-
-        @Bean(initMethod = "init", destroyMethod = "shutdownForce")
-        @ConditionalOnMissingBean
-        public com.atomikos.icatch.config.UserTransactionServiceImp userTransactionService() {
-            Properties properties = new Properties();
-            properties.setProperty("com.atomikos.icatch", UserTransactionServiceFactory.class.getName());
-
-            com.atomikos.icatch.config.UserTransactionServiceImp userTransactionManager = new com.atomikos.icatch.config.UserTransactionServiceImp(properties);
-
-            if (logAdministrators != null && logAdministrators.length > 0) {
-                userTransactionManager.setInitialLogAdministrators(Arrays.asList(logAdministrators));
-            }
-            return userTransactionManager;
-        }
-
-        @Bean(initMethod = "init", destroyMethod = "close")
-        @ConditionalOnMissingBean
-        public com.atomikos.icatch.jta.UserTransactionManager atomikosUserTransactionManager() throws SystemException {
-            com.atomikos.icatch.jta.UserTransactionManager userTransactionManager = new com.atomikos.icatch.jta.UserTransactionManager();
-            userTransactionManager.setStartupTransactionService( false );
-            userTransactionManager.setForceShutdown(false);
-            return userTransactionManager;
-        }
-
-        @Bean
-        @ConditionalOnMissingBean
-        public com.atomikos.icatch.jta.UserTransactionImp atomikosUserTransaction() throws SystemException {
-            com.atomikos.icatch.jta.UserTransactionImp userTransactionImp = new com.atomikos.icatch.jta.UserTransactionImp();
-            userTransactionImp.setTransactionTimeout(300);
-
-            return userTransactionImp;
-        }
-
-        @Bean(name = "transactionManager")
-        @ConditionalOnMissingBean(value = PlatformTransactionManager.class)
-        public JtaTransactionManager transactionManager(com.atomikos.icatch.jta.UserTransactionManager transactionManager,
-                                                        com.atomikos.icatch.jta.UserTransactionImp atomikosUserTransaction) {
-            return new JtaTransactionManager(atomikosUserTransaction, transactionManager);
-        }
-    }
-
-    @Configuration
-    @Conditional(JavaEeEnvironmentJtaCondition.class)
-    public static class JavaEeJtaAutoConfiguration {
-
-        @Bean(name = "transactionManager")
-        @ConditionalOnMissingBean(value = PlatformTransactionManager.class)
-        public JtaTransactionManager transactionManager() {
-            return new JtaTransactionManager();
-        }
-    }
-
-    */
-/**
- * tests whether the JTA capabilities are part of a full-fledged Java EE environment.
- *//*
-
-
-
-    */
-/**
- * Tests that we have the requisite types on the CLASSPATH
- *//*
-
-
-*/
-
