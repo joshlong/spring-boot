@@ -5,6 +5,7 @@ import com.atomikos.icatch.config.UserTransactionServiceImp;
 import com.atomikos.icatch.jta.UserTransactionImp;
 import com.atomikos.icatch.jta.UserTransactionManager;
 import org.hibernate.engine.transaction.jta.platform.internal.AbstractJtaPlatform;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -59,6 +60,18 @@ public class JtaAutoConfiguration {
             new AtomicReference<JtaTransactionManager>();
 
 
+    @Bean
+    public InitializingBean initializingBean(final JtaTransactionManager jtaTransactionManager) {
+
+        JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
+
+        return new InitializingBean() {
+            @Override
+            public void afterPropertiesSet() throws Exception {
+            }
+        };
+    }
+
     /**
      * Are we running in an environment that has basic JTA-capable types on the CLASSPATH
      * <EM>and</EM> that has JTA-infrastructure beans, like a {@link javax.transaction.UserTransaction}
@@ -110,6 +123,7 @@ public class JtaAutoConfiguration {
 
     public static final String TRANSACTION_MANAGER_NAME = "jtaTransactionManager";
 
+
     @java.lang.annotation.Target({java.lang.annotation.ElementType.FIELD,
             java.lang.annotation.ElementType.METHOD,
             java.lang.annotation.ElementType.PARAMETER,
@@ -139,18 +153,16 @@ public class JtaAutoConfiguration {
 
     @Bean(name = "transactionManager")
     @ConditionalOnMissingBean(value = PlatformTransactionManager.class)
-    @DependsOn({USER_TRANSACTION_NAME, TRANSACTION_MANAGER_NAME})
+    @DependsOn({  TRANSACTION_MANAGER_NAME})
     public JtaTransactionManager transactionManager(JtaTransactionManagerConfigurer[] jtaTransactionManagerConfigurers,
-                                                    @UserTransactionBean UserTransactionImp userTransaction,
-                                                    @TransactionManagerBean UserTransactionManager transactionManager) {
+                         @TransactionManagerBean UserTransactionManager transactionManager) {
 
         JtaTransactionManager jtaTransactionManager = new JtaTransactionManager(
-                userTransaction, transactionManager);
+                (TransactionManager) transactionManager);
         jtaTransactionManager.setAllowCustomIsolationLevels(true);
         jtaTransactionManager.setFailEarlyOnGlobalRollbackOnly(true);
         jtaTransactionManager.setRollbackOnCommitFailure(true);
 
-        JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
 
         for (JtaTransactionManagerConfigurer c : jtaTransactionManagerConfigurers)
             c.configureJtaTransactionManager(jtaTransactionManager);
@@ -162,8 +174,9 @@ public class JtaAutoConfiguration {
     @ConditionalOnClass({com.atomikos.icatch.jta.UserTransactionManager.class})
     public static class AtomikosAutoConfiguration {
 
+        private static final String USER_TRANSACTION_SERVICE = "atomikosUserTransactionService";
 
-        @Bean(initMethod = "init", destroyMethod = "shutdownForce")
+         @Bean( name = USER_TRANSACTION_SERVICE,initMethod = "init", destroyMethod = "shutdownForce")
         @ConditionalOnMissingBean
         public UserTransactionService userTransactionService(ConfigurableEnvironment e) {
 
@@ -173,16 +186,20 @@ public class JtaAutoConfiguration {
 
             String logBaseDirProperty = "com.atomikos.icatch.log_base_dir";
             String outputDirProperty = "com.atomikos.icatch.output_dir";
+            String autoEnroll = "com.atomikos.icatch.automatic_resource_registration";
 
             Map<String, Object> rootDataDirProperties = new HashMap<String, Object>();
             rootDataDirProperties.put(outputDirProperty, path);
             rootDataDirProperties.put(logBaseDirProperty, path);
 
+            rootDataDirProperties.put("com.atomikos.icatch.threaded_2pc", "false");
+            rootDataDirProperties.put(autoEnroll, "false");
+
             addEnvironmentProperties(e, rootDataDirProperties);
 
             // take out any well known properties from the environment and pass to Atomikos
             List<String> wellKnownAtomikosSystemProperties = Arrays.asList(
-                    "com.atomikos.icatch.automatic_resource_registration",
+                    autoEnroll,
                     "com.atomikos.icatch.client_demarcation",
                     "com.atomikos.icatch.threaded_2pc",
                     "com.atomikos.icatch.serial_jta_transactions",
@@ -215,13 +232,14 @@ public class JtaAutoConfiguration {
         @Bean(name = TRANSACTION_MANAGER_NAME, initMethod = "init", destroyMethod = "close")
         @ConditionalOnMissingBean
         @TransactionManagerBean
+        @DependsOn(USER_TRANSACTION_SERVICE)
         public UserTransactionManager atomikosTransactionManager() throws SystemException {
             UserTransactionManager userTransactionManager = new UserTransactionManager();
             userTransactionManager.setForceShutdown(true);
             userTransactionManager.setTransactionTimeout(this.txTimeout);
             return userTransactionManager;
         }
-
+/*
         @Bean(name = USER_TRANSACTION_NAME)
         @ConditionalOnMissingBean
         @UserTransactionBean
@@ -229,16 +247,18 @@ public class JtaAutoConfiguration {
             UserTransactionImp uti = new UserTransactionImp();
             uti.setTransactionTimeout(this.txTimeout);
             return uti;
-        }
+        }*/
 
         @Bean
         public JtaTransactionManagerConfigurer jpaConfiguration(
-                final JpaProperties properties) {
+            final JmsProperties jmsProperties,
+            final JpaProperties properties) {
 
             return new JtaTransactionManagerConfigurer() {
 
                 @Override
                 public void configureJtaTransactionManager(JtaTransactionManager jtaTransactionManager) {
+                    jmsProperties.setSessionTransacted(true);
                     properties.getProperties().put("hibernate.transaction.jta.platform", AtomikosJtaPlatform.class.getName());
                     properties.getProperties().put("javax.persistence.transactionType", "JTA");
                 }

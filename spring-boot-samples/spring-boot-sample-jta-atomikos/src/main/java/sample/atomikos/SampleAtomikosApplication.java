@@ -21,8 +21,8 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.jms.XAQueueConnectionFactory;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -41,7 +41,6 @@ import java.util.List;
 @EnableAutoConfiguration(exclude = ActiveMQAutoConfiguration.class)
 public class SampleAtomikosApplication {
 
-    public static final Logger logger = LoggerFactory.getLogger(SampleAtomikosApplication.class);
 
     public static void main(String[] args) {
         SpringApplication.run(SampleAtomikosApplication.class, args);
@@ -49,11 +48,13 @@ public class SampleAtomikosApplication {
 
     @Bean(initMethod = "init", destroyMethod = "close")
     public AtomikosDataSourceBean xaDataSource() {
+
         AtomikosDataSourceBean xaDS = new AtomikosDataSourceBean();
         xaDS.setUniqueResourceName("xaDataSource");
         xaDS.setTestQuery("select now()");
         xaDS.setXaDataSource(dataSource("127.0.0.1", "crm", "crm", "crm"));
         xaDS.setPoolSize(10);
+
         return xaDS;
     }
 
@@ -63,12 +64,11 @@ public class SampleAtomikosApplication {
         xaCF.setXaConnectionFactory(connectionFactory("tcp://localhost:61616"));
         xaCF.setUniqueResourceName("xaConnectionFactory");
         xaCF.setPoolSize(10);
-        xaCF.setLocalTransactionMode( false);
+        xaCF.setLocalTransactionMode(false);
         return xaCF;
     }
 
-
-    private static javax.jms.XAQueueConnectionFactory  connectionFactory(String url) {
+    private static javax.jms.XAQueueConnectionFactory connectionFactory(String url) {
         return new ActiveMQXAConnectionFactory(url);
     }
 
@@ -82,14 +82,20 @@ public class SampleAtomikosApplication {
     }
 
     @Bean
-    public CommandLineRunner init(final PlatformTransactionManager platformTransactionManager,
-                                  final JdbcTemplate jdbcTemplate,
-                                  final AccountService accountService) {
+    public TransactionTemplate transactionTemplate(PlatformTransactionManager platformTransactionManager) {
+        return new TransactionTemplate(platformTransactionManager);
+    }
+
+    @Bean
+    public CommandLineRunner init(
+            final JdbcTemplate jdbcTemplate,
+            final AccountService accountService) {
         return new CommandLineRunner() {
+
+            private final Logger logger = LoggerFactory.getLogger(getClass());
+
             @Override
             public void run(String... args) throws Exception {
-
-                logger.info("working with a " + platformTransactionManager.toString());
 
                 jdbcTemplate.execute("delete from account");
 
@@ -109,8 +115,10 @@ public class SampleAtomikosApplication {
                     logger.info("account " + account.toString());
                 }
 
+
             }
         };
+
     }
 }
 
