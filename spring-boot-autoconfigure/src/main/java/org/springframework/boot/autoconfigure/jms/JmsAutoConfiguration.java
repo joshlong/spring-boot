@@ -29,8 +29,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.transaction.jta.JtaTransactionManager;
 
 import javax.jms.ConnectionFactory;
+import javax.jms.DeliveryMode;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for Spring JMS.
@@ -41,7 +43,7 @@ import javax.jms.ConnectionFactory;
 @ConditionalOnClass(JmsTemplate.class)
 @ConditionalOnBean(ConnectionFactory.class)
 @EnableConfigurationProperties(JmsProperties.class)
-@AutoConfigureAfter({JtaAutoConfiguration.class,HornetQAutoConfiguration.class, ActiveMQAutoConfiguration.class})
+@AutoConfigureAfter({JtaAutoConfiguration.class, HornetQAutoConfiguration.class, ActiveMQAutoConfiguration.class})
 public class JmsAutoConfiguration {
 
     @Autowired
@@ -50,13 +52,28 @@ public class JmsAutoConfiguration {
     @Autowired
     private ConnectionFactory connectionFactory;
 
+    private JmsTemplate jmsTemplate(ConnectionFactory connectionFactory) {
+        JmsTemplate jmsTemplate = new JmsTemplate(this.connectionFactory);
+        jmsTemplate.setPubSubDomain(this.properties.isPubSubDomain());
+        boolean sessionTransacted = this.properties.isSessionTransacted();
+        if (sessionTransacted) {
+            jmsTemplate.setSessionTransacted(sessionTransacted);
+            jmsTemplate.setSessionAcknowledgeMode(javax.jms.Session.CLIENT_ACKNOWLEDGE);
+        }
+        return jmsTemplate;
+    }
+
     @Bean
     @ConditionalOnMissingBean
     public JmsTemplate jmsTemplate() {
-        JmsTemplate jmsTemplate = new JmsTemplate(this.connectionFactory);
-        jmsTemplate.setPubSubDomain(this.properties.isPubSubDomain());
-        jmsTemplate.setSessionTransacted(this.properties.isSessionTransacted());
-        return jmsTemplate;
+        return jmsTemplate(this.connectionFactory);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(JtaTransactionManager.class)
+    public JmsTemplate jmsTemplate(JtaTransactionManager jtaTransactionManager) {
+        return jmsTemplate(this.connectionFactory);
     }
 
 }

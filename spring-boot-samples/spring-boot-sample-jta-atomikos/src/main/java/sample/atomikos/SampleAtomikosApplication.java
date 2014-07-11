@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.jms.activemq.ActiveMQAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -18,13 +18,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jms.core.JmsTemplate;
-import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.jms.XAQueueConnectionFactory;
 import javax.persistence.Entity;
-import javax.persistence.EntityManager;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import java.sql.ResultSet;
@@ -39,7 +38,7 @@ import java.util.List;
  */
 @Configuration
 @ComponentScan
-@EnableAutoConfiguration
+@EnableAutoConfiguration(exclude = ActiveMQAutoConfiguration.class)
 public class SampleAtomikosApplication {
 
     public static final Logger logger = LoggerFactory.getLogger(SampleAtomikosApplication.class);
@@ -64,11 +63,12 @@ public class SampleAtomikosApplication {
         xaCF.setXaConnectionFactory(connectionFactory("tcp://localhost:61616"));
         xaCF.setUniqueResourceName("xaConnectionFactory");
         xaCF.setPoolSize(10);
+        xaCF.setLocalTransactionMode( false);
         return xaCF;
     }
 
 
-    private static javax.jms.XAConnectionFactory connectionFactory(String url) {
+    private static javax.jms.XAQueueConnectionFactory  connectionFactory(String url) {
         return new ActiveMQXAConnectionFactory(url);
     }
 
@@ -82,16 +82,20 @@ public class SampleAtomikosApplication {
     }
 
     @Bean
-    public CommandLineRunner init(final JdbcTemplate jdbcTemplate, final AccountService accountService) {
+    public CommandLineRunner init(final PlatformTransactionManager platformTransactionManager,
+                                  final JdbcTemplate jdbcTemplate,
+                                  final AccountService accountService) {
         return new CommandLineRunner() {
             @Override
             public void run(String... args) throws Exception {
+
+                logger.info("working with a " + platformTransactionManager.toString());
 
                 jdbcTemplate.execute("delete from account");
 
                 logger.info(accountService.createAccount("pwebb", false).toString());
                 logger.info(accountService.createAccount("dsyer", false).toString());
-                logger.info(accountService.createAccount("jlong", false).toString());
+                logger.info(accountService.createAccount("jlong", true).toString());
 
                 List<Account> accountList = jdbcTemplate.query(
                         "select * from account", new RowMapper<Account>() {
@@ -104,6 +108,7 @@ public class SampleAtomikosApplication {
                 for (Account account : accountList) {
                     logger.info("account " + account.toString());
                 }
+
             }
         };
     }
@@ -128,10 +133,15 @@ class AccountService {
 
     @Transactional
     public Account createAccount(String username, boolean rollback) {
+
         Account account = this.accountRepository.save(new Account(username));
-        logger.info("created account " + account.toString());
         String msg = account.getId() + ":" + account.getUsername();
+
         jmsTemplate.convertAndSend("accounts", msg);
+
+        logger.info("created account " + account.toString());
+
+
         logger.info("send message to 'accounts' destination " + msg);
         if (rollback) {
             String err = "throwing an exception for account#" + account.getId() +
@@ -184,84 +194,3 @@ class Account {
 
 interface AccountRepository extends JpaRepository<Account, Long> {
 }
-
-@Configuration
-@ConditionalOnClass({
-        com.atomikos.icatch.jta.hibernate3.TransactionManagerLookup.class,
-        LocalContainerEntityManagerFactoryBean.class,
-        EnableTransactionManagement.class, EntityManager.class})
-// @Conditional(HibernateJpaAutoConfiguration.HibernateEntityManagerCondition.class)
-// @AutoConfigureAfter(DataSourceAutoConfiguration.class)
-// @AutoConfigureBefore(HibernateJpaAutoConfiguration.class)
-class HibernateAtomikosJtaAutoConfiguration {
-
-
-}
-
-/*
-@Configuration
-@AutoConfigureBefore({DataSourceTransactionManagerAutoConfiguration.class, HibernateJpaAutoConfiguration.class})
-@Conditional(JtaAutoConfiguration.JtaCondition.class)
-@ConditionalOnClass(JtaTransactionManager.class)
-class JtaAutoConfiguration {
-
-    private static Log logger = LogFactory.getLog(JtaAutoConfiguration.class);
-
-
-    // configure the third party Atomikos JTA support
-    @Configuration
-    @ConditionalOnClass(com.atomikos.icatch.jta.UserTransactionImp.class)
-    public static class AtomikosJtaAutoConfiguration {
-
-    }
-
-    @Configuration
-    @Conditional(JavaEeEnvironmentJtaCondition.class)
-    public static class JavaEeJtaAutoConfiguration {
-
-        @Bean(name = "transactionManager")
-        @ConditionalOnMissingBean(value = PlatformTransactionManager.class)
-        public JtaTransactionManager transactionManager() {
-            return new JtaTransactionManager();
-        }
-    }
-
-
-    public static class JavaEeEnvironmentJtaCondition extends SpringBootCondition {
-        @Override
-        public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
-            try {
-                JtaTransactionManager jtaTransactionManager = new JtaTransactionManager();
-                jtaTransactionManager.setAutodetectTransactionManager(true);
-                jtaTransactionManager.setAutodetectUserTransaction(true);
-                jtaTransactionManager.afterPropertiesSet();
-                // made it this far, so the setup should've succeeded.
-                return ConditionOutcome.match();
-            } catch (IllegalStateException e) {
-                return ConditionOutcome.noMatch("couldn't initialize a " +
-                        JtaTransactionManager.class.getName() + " correctly.");
-            }
-        }
-    }
-
-
-    public static class JtaCondition extends SpringBootCondition {
-
-        private static String[] CLASS_NAMES =
-                "javax.jms.XAConnectionFactory,javax.sql.XADataSource".split(",");
-
-        @Override
-        public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
-            // basic test for JTA classes
-            for (String className : CLASS_NAMES) {
-                if (ClassUtils.isPresent(className, context.getClassLoader())) {
-                    return ConditionOutcome.match("found an XA class on the CLASSPATH.");
-                }
-            }
-            return ConditionOutcome.noMatch("no XA class.");
-        }
-    }
-}
-
-*/
-

@@ -16,11 +16,6 @@
 
 package org.springframework.boot.autoconfigure.orm.jpa;
 
-import java.util.List;
-import java.util.Map;
-
-import javax.sql.DataSource;
-
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
@@ -28,9 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,8 +37,13 @@ import org.springframework.orm.jpa.support.OpenEntityManagerInViewFilter;
 import org.springframework.orm.jpa.support.OpenEntityManagerInViewInterceptor;
 import org.springframework.orm.jpa.vendor.AbstractJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.jta.JtaTransactionManager;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+
+import javax.sql.DataSource;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Base {@link EnableAutoConfiguration Auto-configuration} for JPA.
@@ -58,97 +56,110 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @Import(DataSourceInitializedPublisher.Registrar.class)
 public abstract class JpaBaseConfiguration implements BeanFactoryAware {
 
-	private static final String[] NO_PACKAGES = new String[0];
+    private static final String[] NO_PACKAGES = new String[0];
 
-	private ConfigurableListableBeanFactory beanFactory;
+    private ConfigurableListableBeanFactory beanFactory;
 
-	@Autowired
-	private DataSource dataSource;
+    @Autowired
+    private DataSource dataSource;
 
-	@Autowired(required = false)
-	private PersistenceUnitManager persistenceUnitManager;
+    @Autowired(required = false)
+    private PersistenceUnitManager persistenceUnitManager;
 
-	@Autowired
-	private JpaProperties jpaProperties;
+    @Autowired
+    private JpaProperties jpaProperties;
 
-	@Bean
-	@ConditionalOnMissingBean(PlatformTransactionManager.class)
-	public PlatformTransactionManager transactionManager() {
-		return new JpaTransactionManager();
-	}
+    @Bean
+    @ConditionalOnMissingBean(PlatformTransactionManager.class)
+    public PlatformTransactionManager transactionManager() {
+        return new JpaTransactionManager();
+    }
 
-	@Bean
-	@ConditionalOnMissingBean
-	public JpaVendorAdapter jpaVendorAdapter() {
-		AbstractJpaVendorAdapter adapter = createJpaVendorAdapter();
-		adapter.setShowSql(this.jpaProperties.isShowSql());
-		adapter.setDatabase(this.jpaProperties.getDatabase());
-		adapter.setDatabasePlatform(this.jpaProperties.getDatabasePlatform());
-		adapter.setGenerateDdl(this.jpaProperties.isGenerateDdl());
-		return adapter;
-	}
+    @Bean
+    @ConditionalOnMissingBean
+    public JpaVendorAdapter jpaVendorAdapter() {
+        AbstractJpaVendorAdapter adapter = createJpaVendorAdapter();
+        adapter.setShowSql(this.jpaProperties.isShowSql());
+        adapter.setDatabase(this.jpaProperties.getDatabase());
+        adapter.setDatabasePlatform(this.jpaProperties.getDatabasePlatform());
+        adapter.setGenerateDdl(this.jpaProperties.isGenerateDdl());
+        return adapter;
+    }
 
-	@Bean
-	@ConditionalOnMissingBean
-	public EntityManagerFactoryBuilder entityManagerFactoryBuilder(
-			JpaVendorAdapter jpaVendorAdapter) {
-		EntityManagerFactoryBuilder builder = new EntityManagerFactoryBuilder(
-				jpaVendorAdapter, this.jpaProperties, this.persistenceUnitManager);
-		builder.setCallback(getVendorCallback());
-		return builder;
-	}
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean( JtaTransactionManager.class)
+    public EntityManagerFactoryBuilder entityManagerFactoryBuilder(
+            JtaTransactionManager jtaTransactionManager,
+            JpaVendorAdapter jpaVendorAdapter) {
+        EntityManagerFactoryBuilder builder = new EntityManagerFactoryBuilder(
+                jpaVendorAdapter, this.jpaProperties, this.persistenceUnitManager);
+        builder.setCallback(getVendorCallback());
+        return builder;
+    }
 
-	@Bean
-	@Primary
-	@ConditionalOnMissingBean
-	public LocalContainerEntityManagerFactoryBean entityManagerFactory(
-			EntityManagerFactoryBuilder factory) {
-		return factory.dataSource(this.dataSource).packages(getPackagesToScan())
-				.properties(getVendorProperties()).build();
-	}
 
-	protected abstract AbstractJpaVendorAdapter createJpaVendorAdapter();
+    @Bean
+    @ConditionalOnMissingBean
+    public EntityManagerFactoryBuilder entityManagerFactoryBuilder(
+            JpaVendorAdapter jpaVendorAdapter) {
+        EntityManagerFactoryBuilder builder = new EntityManagerFactoryBuilder(
+                jpaVendorAdapter, this.jpaProperties, this.persistenceUnitManager);
+        builder.setCallback(getVendorCallback());
+        return builder;
+    }
 
-	protected abstract Map<String, String> getVendorProperties();
+    @Bean
+    @Primary
+    @ConditionalOnMissingBean
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(
+            EntityManagerFactoryBuilder factory) {
+        return factory.dataSource(this.dataSource).packages(getPackagesToScan())
+                .properties(getVendorProperties()).build();
+    }
 
-	protected EntityManagerFactoryBuilder.EntityManagerFactoryBeanCallback getVendorCallback() {
-		return null;
-	}
+    protected abstract AbstractJpaVendorAdapter createJpaVendorAdapter();
 
-	protected String[] getPackagesToScan() {
-		if (AutoConfigurationPackages.has(this.beanFactory)) {
-			List<String> basePackages = AutoConfigurationPackages.get(this.beanFactory);
-			return basePackages.toArray(new String[basePackages.size()]);
-		}
-		return NO_PACKAGES;
-	}
+    protected abstract Map<String, String> getVendorProperties();
 
-	protected void configure(
-			LocalContainerEntityManagerFactoryBean entityManagerFactoryBean) {
-	}
+    protected EntityManagerFactoryBuilder.EntityManagerFactoryBeanCallback getVendorCallback() {
+        return null;
+    }
 
-	@Override
-	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
-		this.beanFactory = (ConfigurableListableBeanFactory) beanFactory;
-	}
+    protected String[] getPackagesToScan() {
+        if (AutoConfigurationPackages.has(this.beanFactory)) {
+            List<String> basePackages = AutoConfigurationPackages.get(this.beanFactory);
+            return basePackages.toArray(new String[basePackages.size()]);
+        }
+        return NO_PACKAGES;
+    }
 
-	@Configuration
-	@ConditionalOnWebApplication
-	@ConditionalOnMissingBean({ OpenEntityManagerInViewInterceptor.class,
-			OpenEntityManagerInViewFilter.class })
-	@ConditionalOnExpression("${spring.jpa.openInView:${spring.jpa.open_in_view:true}}")
-	protected static class JpaWebConfiguration extends WebMvcConfigurerAdapter {
+    protected void configure(
+            LocalContainerEntityManagerFactoryBean entityManagerFactoryBean) {
+    }
 
-		@Override
-		public void addInterceptors(InterceptorRegistry registry) {
-			registry.addWebRequestInterceptor(openEntityManagerInViewInterceptor());
-		}
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = (ConfigurableListableBeanFactory) beanFactory;
+    }
 
-		@Bean
-		public OpenEntityManagerInViewInterceptor openEntityManagerInViewInterceptor() {
-			return new OpenEntityManagerInViewInterceptor();
-		}
+    @Configuration
+    @ConditionalOnWebApplication
+    @ConditionalOnMissingBean({OpenEntityManagerInViewInterceptor.class,
+            OpenEntityManagerInViewFilter.class})
+    @ConditionalOnExpression("${spring.jpa.openInView:${spring.jpa.open_in_view:true}}")
+    protected static class JpaWebConfiguration extends WebMvcConfigurerAdapter {
 
-	}
+        @Override
+        public void addInterceptors(InterceptorRegistry registry) {
+            registry.addWebRequestInterceptor(openEntityManagerInViewInterceptor());
+        }
+
+        @Bean
+        public OpenEntityManagerInViewInterceptor openEntityManagerInViewInterceptor() {
+            return new OpenEntityManagerInViewInterceptor();
+        }
+
+    }
 
 }
