@@ -108,7 +108,7 @@ public class JtaAutoConfiguration {
     @ConditionalOnClass(com.arjuna.ats.jta.UserTransaction.class)
     @Import(NarayanaAutoConfiguration.class)
     @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
-    public static class ArjunaJBossTmJTaConfiguration {
+    public static class NarayanaJBossTmJTaConfiguration {
     }
 
     @Configuration
