@@ -5,6 +5,8 @@ import com.arjuna.ats.jdbc.TransactionalDriver;
 import org.postgresql.xa.PGXADataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanNameAware;
+import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -69,22 +71,65 @@ public class SampleNarayanaApplication {
      * wrap it, and then return a pool to that proxy.
      */
     @Bean
-    public DataSource dataSource() {
+    public FactoryBean<DataSource> dataSource() {
         XADataSource xaDataSource = dataSource("127.0.0.1", "crm", "crm", "crm");
-        return buildXaDataSource(xaDataSource, "xaDataSource");
+        return new NarayanaDataSourceFactoryBean(xaDataSource, "crm", "crm");
     }
 
-    private DataSource buildXaDataSource(XADataSource xaDataSource, String beanName) {
-        XA_DATA_SOURCE_MAP.put(beanName, xaDataSource);
-        TransactionalDriver transactionalDriver = new TransactionalDriver();
-        Properties properties = new Properties();
-        properties.setProperty(TransactionalDriver.dynamicClass, SpringDynamicClass.class.getName());
-        String url = TransactionalDriver.arjunaDriver + "" + beanName;
-        SimpleDriverDataSource simpleDriverDataSource =
-                new SimpleDriverDataSource(transactionalDriver, url, properties);
-         simpleDriverDataSource.setUsername("crm");
-        simpleDriverDataSource.setPassword("crm");
-        return simpleDriverDataSource;
+
+    public static class NarayanaDataSourceFactoryBean
+            implements BeanNameAware,
+            FactoryBean<DataSource> {
+
+        private String beanName;
+        private final XADataSource xaDataSource;
+        private String user, password;
+
+        private static DataSource buildXaDataSource(
+                String user,
+                String pw,
+                XADataSource xaDataSource,
+                String beanName) {
+            XA_DATA_SOURCE_MAP.put(beanName, xaDataSource);
+            TransactionalDriver transactionalDriver = new TransactionalDriver();
+            Properties properties = new Properties();
+            properties.setProperty(TransactionalDriver.userName, user);
+            properties.setProperty(TransactionalDriver.password, pw);
+            properties.setProperty(TransactionalDriver.dynamicClass, SpringDynamicClass.class.getName());
+            String url = TransactionalDriver.arjunaDriver + "" + beanName;
+            SimpleDriverDataSource simpleDriverDataSource =
+                    new SimpleDriverDataSource(transactionalDriver, url, properties);
+            simpleDriverDataSource.setUsername(user);
+            simpleDriverDataSource.setPassword(pw);
+            return simpleDriverDataSource;
+        }
+
+        @Override
+        public void setBeanName(String name) {
+            this.beanName = name;
+        }
+
+        public NarayanaDataSourceFactoryBean(
+                XADataSource xaDataSource, String username, String password) {
+            this.xaDataSource = xaDataSource;
+            this.user = username;
+            this.password = password;
+        }
+
+        @Override
+        public DataSource getObject() throws Exception {
+            return buildXaDataSource(this.user, this.password, this.xaDataSource, this.beanName);
+        }
+
+        @Override
+        public Class<?> getObjectType() {
+            return DataSource.class;
+        }
+
+        @Override
+        public boolean isSingleton() {
+            return true;
+        }
     }
 
     public static void main(String[] args) {
