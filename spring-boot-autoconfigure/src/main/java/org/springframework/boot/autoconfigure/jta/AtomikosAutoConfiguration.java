@@ -3,6 +3,7 @@ package org.springframework.boot.autoconfigure.jta;
 import com.atomikos.icatch.config.UserTransactionService;
 import com.atomikos.icatch.config.UserTransactionServiceImp;
 import com.atomikos.icatch.jta.UserTransactionManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.jms.JmsProperties;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
@@ -10,7 +11,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 import javax.transaction.SystemException;
@@ -22,25 +22,32 @@ import java.util.*;
  * @author Josh Long
  */
 @Configuration
-public class AtomikosAutoConfiguration {
+class AtomikosAutoConfiguration {
 
     private static final String USER_TRANSACTION_SERVICE = "atomikosUserTransactionService";
 
     private static final int TX_TIMEOUT = 10 * 1000;
 
+    @Autowired(required = false)
+    private JpaProperties jpaProperties;
+
+    @Autowired(required = false)
+    private JmsProperties jmsProperties;
+
     @Bean(name = "transactionManager")
     @ConditionalOnMissingBean(name = "transactionManager")
     @DependsOn({JtaAutoConfiguration.TRANSACTION_MANAGER_NAME})
-    public JtaTransactionManager transactionManager(JtaTransactionManagerConfigurer[] jtaTransactionManagerConfigurers,
-                                                    @TransactionManagerBean UserTransactionManager transactionManager) {
+    public JtaTransactionManager transactionManager(
+
+            @TransactionManagerBean UserTransactionManager transactionManager) {
 
         JtaTransactionManager jtaTransactionManager = new JtaTransactionManager((TransactionManager) transactionManager);
         jtaTransactionManager.setAllowCustomIsolationLevels(true);
         jtaTransactionManager.setFailEarlyOnGlobalRollbackOnly(true);
         jtaTransactionManager.setRollbackOnCommitFailure(true);
 
-        for (JtaTransactionManagerConfigurer c : jtaTransactionManagerConfigurers)
-            c.configureJtaTransactionManager(jtaTransactionManager);
+        JtaAutoConfiguration.configureJtaProperties(jtaTransactionManager,
+                this.jmsProperties, this.jpaProperties);
 
         return jtaTransactionManager;
     }
@@ -119,23 +126,6 @@ public class AtomikosAutoConfiguration {
             }
         };
     }*/
-
-    @Bean
-    public JtaTransactionManagerConfigurer jpaConfiguration(
-            final JmsProperties jmsProperties,
-            final JpaProperties properties) {
-
-        return new JtaTransactionManagerConfigurer() {
-
-            @Override
-            public void configureJtaTransactionManager(JtaTransactionManager jtaTransactionManager) {
-                jmsProperties.setSessionTransacted(true);
-                properties.getProperties().put(
-                        "hibernate.transaction.jta.platform", SpringJtaPlatform.class.getName());
-                properties.getProperties().put("javax.persistence.transactionType", "JTA");
-            }
-        };
-    }
 
 
 }

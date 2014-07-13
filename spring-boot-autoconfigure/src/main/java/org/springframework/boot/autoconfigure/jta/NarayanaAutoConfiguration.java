@@ -1,6 +1,9 @@
 package org.springframework.boot.autoconfigure.jta;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.jms.JmsProperties;
+import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -11,21 +14,26 @@ import javax.transaction.UserTransaction;
 
 
 @Configuration
-public class NarayanaAutoConfiguration {
+class NarayanaAutoConfiguration {
+
+    @Autowired(required = false)
+    private JpaProperties jpaProperties;
+
+    @Autowired(required = false)
+    private JmsProperties jmsProperties;
+
 
     @Primary
     @Bean(name = "transactionManager")
     @ConditionalOnMissingBean(name = "transactionManager")
-    public JtaTransactionManager transactionManager(
-            JtaTransactionManagerConfigurer[] jtaTransactionManagerConfigurers) {
+    public JtaTransactionManager transactionManager() {
 
         JtaTransactionManager jtaTransactionManager = new JtaTransactionManager(jtaUserTransaction(), jtaTransactionManager());
         jtaTransactionManager.setAllowCustomIsolationLevels(true);
         jtaTransactionManager.setFailEarlyOnGlobalRollbackOnly(true);
         jtaTransactionManager.setRollbackOnCommitFailure(true);
 
-        for (JtaTransactionManagerConfigurer c : jtaTransactionManagerConfigurers)
-            c.configureJtaTransactionManager(jtaTransactionManager);
+        JtaAutoConfiguration.configureJtaProperties(jtaTransactionManager, this.jmsProperties, this.jpaProperties);
 
         return jtaTransactionManager;
     }

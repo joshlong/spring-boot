@@ -32,13 +32,6 @@ public class SpringJtaPlatform extends AbstractJtaPlatform {
         return (hasTransactionManager() ? JTA_TRANSACTION_MANAGER.get().getUserTransaction() : null);
     }
 
-    @Autowired
-    private ObjectFactory<JtaTransactionManager> transactionManager;
 
-    @PostConstruct
-    public void setup() {
-        JTA_TRANSACTION_MANAGER.set(
-                this.transactionManager.getObject() );
-    }
 
 }
