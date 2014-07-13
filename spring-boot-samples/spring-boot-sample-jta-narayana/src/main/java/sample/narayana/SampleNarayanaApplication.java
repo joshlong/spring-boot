@@ -40,7 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Configuration
 @ComponentScan
-@EnableAutoConfiguration // (exclude = JtaAutoConfiguration.class)
+@EnableAutoConfiguration(exclude = JtaAutoConfiguration.class)
 public class SampleNarayanaApplication {
 
     public static final Logger logger = LoggerFactory.getLogger(SampleNarayanaApplication.class);
@@ -54,7 +54,7 @@ public class SampleNarayanaApplication {
         @Override
         public XADataSource getDataSource(String dataSourceBeanName) throws SQLException {
             if (dataSourceBeanName.startsWith(TransactionalDriver.arjunaDriver))
-                dataSourceBeanName = dataSourceBeanName.substring( TransactionalDriver.arjunaDriver.length());
+                dataSourceBeanName = dataSourceBeanName.substring(TransactionalDriver.arjunaDriver.length());
 
             return XA_DATA_SOURCE_MAP.get(dataSourceBeanName);
         }
