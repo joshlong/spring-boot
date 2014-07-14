@@ -1,5 +1,6 @@
 package sample.narayana;
 
+import org.apache.activemq.ActiveMQXAConnectionFactory;
 import org.postgresql.xa.PGXADataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,19 +31,49 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+
 /**
- * Demonstrates how to use Atomikos and JTA together to coordinate a transaction database connection (to PostgreSQL)
- * and a transactional Message Queue connection (to ActiveMQ, in this case)
+ * Interesting guide - http://jbossts.blogspot.com/2012/01/connecting-dots.html :-)
+ * <p>
+ * The roles, responsibilities and relationship between the JTA and JCA components of an app
+ * server are critical considerations when you're trying to do without one. The JTA manages transaction lifecycle - begin/commit/rollback.
+ * Most importantly, it make appropriate calls on any enlisted XAResources as the transaction progresses. But here is the bit that most users don't
+ * pay attention to: A JTA does not magically know what resources you want to participate in the transaction. Telling it that is the JCA's job.
+ * <p>
+ * In a full on app server, the JCA manages connections to resource managers such as databases and message queues.
+ * If you deploy those drivers/connectors in a manner that identifies them as XA enabled, the JCA ensures that they
+ * are correctly associated with the transaction. Application code simply e.g. looks up the JNDI name for a connection pool and calls
+ * getConnection(). The JCA intercepts the call, get the XAResource for the connection and passes it to the transaction manager.
+ * <p>
+ * In some cases you don't need a full JCA. You can often make do with a transaction manager aware XA connection pool,
+ * which is essentially a subset of the JCA functionality. But you can't get away with only an XA aware driver or a non-XA connection pool.
+ * Trying to do that leads to some interesting behaviour: your app will deploy and run, but you have a transaction and a connection that know nothing
+ * about one another. Committing or rolling back the transaction won't commit or rollback the work in the database. oops.
+ * <p>
+ * So, you also need to wire in a JCA or suitable connection pooling implementation. Most 'standalone' JTA implementations ship with a simple
+ * connection management solution that is suitable for light use. The one in JBossTS is called the TransactionalDriver. For serious deployments
+ * you want IronJacamar or some other JCA that has robust and fast connection management.
+ * <p>
+ * So now you have wired up your JTA and JCA in Spring, but you are still not done because...
+ * <p>
+ * The standard contract between JTA and JCA does not include recovery management setup. Wiring up resources for crash recovery requires
+ * a proprietary solution that differs for each transaction manager. The connection manager that ships with the transaction manager may
+ * do this more or less automatically, but third party JCAs or XA aware connection pools probably won't.
+ * So, go read the transaction manager documentation and write a few test cases.
  *
  * @author Josh Long
  */
 @Configuration
 @ComponentScan
-@EnableAutoConfiguration//(exclude = JtaAutoConfiguration.class)
+@EnableAutoConfiguration
 public class SampleNarayanaApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(SampleNarayanaApplication.class, args);
+    }
+
+    private static ActiveMQXAConnectionFactory connectionFactory(String url) {
+        return new ActiveMQXAConnectionFactory(url);
     }
 
     private static javax.sql.XADataSource dataSource(String host, String db, String username, String pw) {
@@ -70,6 +101,11 @@ public class SampleNarayanaApplication {
     }
 
     @Bean
+    public ActiveMQXAConnectionFactory connectionFactory() {
+        return connectionFactory("tcp://localhost:61616");
+    }
+
+    @Bean
     public CommandLineRunner init(
             final AccountService accountService,
             final PlatformTransactionManager transactionManager,
@@ -77,7 +113,10 @@ public class SampleNarayanaApplication {
         return new CommandLineRunner() {
             @Override
             public void run(String... args) throws Exception {
-                l.info("transactionManager: " + transactionManager.toString());
+
+                jdbcTemplate.execute("delete from account");
+
+                logger.info("transactionManager: " + transactionManager.toString());
                 listAccounts();
                 accountService.createAccount("jlong", false);
                 listAccounts();
@@ -92,13 +131,12 @@ public class SampleNarayanaApplication {
                 }
             };
 
-            private Logger l = LoggerFactory.getLogger(getClass());
+            private Logger logger = LoggerFactory.getLogger(getClass());
 
             private void listAccounts() {
-
                 List<Account> accountList = jdbcTemplate.query("select * from account", accountRowMapper);
                 for (Account account : accountList) {
-                    l.info(account.toString());
+                    logger.info(account.toString());
                 }
             }
         };
@@ -115,8 +153,7 @@ class AccountService {
     private AccountRepository accountRepository;
 
     @Autowired
-    AccountService(AccountRepository accountRepository
-                  /* JmsTemplate jmsTemplate*/) {
+    AccountService(AccountRepository accountRepository, JmsTemplate jmsTemplate) {
         this.accountRepository = accountRepository;
         this.jmsTemplate = jmsTemplate;
     }
@@ -126,12 +163,11 @@ class AccountService {
     public Account createAccount(String username, boolean rollback) {
 
         Account account = this.accountRepository.save(new Account(username));
-        String msg = account.getId() + ":" + account.getUsername();
+        String msg = account.getId() + " " + account.getUsername();
 
-        ///jmsTemplate.convertAndSend("accounts", msg);
+        jmsTemplate.convertAndSend("accounts", msg);
 
         logger.info("created account " + account.toString());
-
 
         logger.info("send message to 'accounts' destination " + msg);
         if (rollback) {

@@ -11,13 +11,12 @@ import org.springframework.boot.autoconfigure.jms.JmsProperties;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 import org.springframework.context.annotation.*;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.jta.JtaTransactionManager;
 import org.springframework.util.ClassUtils;
 
-import java.util.Map;
+import java.io.File;
 
 /**
  * Attempts to register JTA transaction managers.
@@ -25,9 +24,9 @@ import java.util.Map;
  * <p>
  * <OL>
  * <LI> Atomikos & (Tomcat || Jetty) </li>
- * <LI> BTM & (Tomcat || Jetty) </li>
- * <LI> JOTM & (Tomcat || Jetty)</li>
  * <LI> Narayana & (Tomcat || Jetty) </li>
+ * <LI> JOTM & (Tomcat || Jetty)</li>
+ * <LI> BTM & (Tomcat || Jetty) </li>
  * <li>Standard Application server JTA search strategy as supported directly
  * by {@link org.springframework.transaction.jta.JtaTransactionManager}.</li>
  * </OL>
@@ -45,14 +44,17 @@ import java.util.Map;
 public class JtaAutoConfiguration {
 
 
+    // todo ew. can't we do better than this?
     @Bean
-    public InitializingBean initializingBean(final JtaTransactionManager jtaTransactionManager) {
+    protected InitializingBean registerJtaTransactionManager(
+            JtaTransactionManager jtaTransactionManager) {
 
         SpringJtaPlatform.JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
 
         return new InitializingBean() {
             @Override
             public void afterPropertiesSet() throws Exception {
+                // don't care
             }
         };
     }
@@ -95,12 +97,17 @@ public class JtaAutoConfiguration {
         if (null != jmsProperties) {
             jmsProperties.setSessionTransacted(true);
         }
+
         if (jpaProperties != null) {
             jpaProperties.getProperties().put(
                     "hibernate.transaction.jta.platform", SpringJtaPlatform.class.getName());
             jpaProperties.getProperties().put("javax.persistence.transactionType", "JTA");
         }
+    }
 
+    public static String jtaRootPathFor(ConfigurableEnvironment e, String jtaDistribution) {
+        return e.getProperty("spring.jta." + jtaDistribution + ".rootPath",
+                new File(System.getProperty("user.home"), "jta/" + jtaDistribution + "Data").getAbsolutePath());
     }
 
 
@@ -108,7 +115,7 @@ public class JtaAutoConfiguration {
     @ConditionalOnClass(com.arjuna.ats.jta.UserTransaction.class)
     @Import(NarayanaAutoConfiguration.class)
     @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
-    public static class NarayanaJBossTmJTaConfiguration {
+    public static class NarayanaJtaConfiguration {
     }
 
     @Configuration
@@ -116,11 +123,6 @@ public class JtaAutoConfiguration {
     @Import(AtomikosAutoConfiguration.class)
     @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
     public static class AtomikosJTaConfiguration {
-    }
-
-    protected static void addEnvironmentProperties(ConfigurableEnvironment environment, Map<String, Object> props) {
-        environment.getPropertySources().addFirst(
-                new MapPropertySource("jta", props));
     }
 
 }

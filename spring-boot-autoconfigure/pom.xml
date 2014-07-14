@@ -337,13 +337,40 @@
             <artifactId>jboss-transaction-api_1.1_spec</artifactId>
             <optional>true</optional>
         </dependency>
-
+        <!--      <dependency>
+                  <groupId>org.jboss.narayana.jta</groupId>
+                  <artifactId>jta</artifactId>
+                  <optional>true</optional>
+              </dependency>
+              <dependency>
+                  <groupId>org.jboss.narayana.jts</groupId>
+                  <artifactId>narayana-jts-integration</artifactId>
+                   <optional>true</optional>
+              </dependency>-->
+        <dependency>
+            <groupId>org.jboss.narayana.jts</groupId>
+            <artifactId>narayana-jts-all</artifactId>
+            <version>${narayana.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.narayana.jta</groupId>
+            <artifactId>jta</artifactId>
+            <version>${narayana.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.narayana.jts</groupId>
+            <artifactId>narayana-jts-integration</artifactId>
+            <version>${narayana.version}</version>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>org.jboss.narayana.jta</groupId>
             <artifactId>narayana-jta</artifactId>
+            <version>${narayana.version}</version>
             <optional>true</optional>
         </dependency>
-
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

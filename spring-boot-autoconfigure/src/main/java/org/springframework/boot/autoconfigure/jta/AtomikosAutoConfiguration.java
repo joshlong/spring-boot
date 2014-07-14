@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 import javax.transaction.SystemException;
@@ -19,6 +20,12 @@ import java.io.File;
 import java.util.*;
 
 /**
+ * Configures the <A href="http://www.atomikos.com/">Atomikos JTA</a> library.
+ * Requires that clients register their {@link javax.sql.DataSource}s with
+ * {@link com.atomikos.jdbc.nonxa.AtomikosNonXADataSourceBean} and their
+ * JMS {@link javax.jms.ConnectionFactory}s with
+ * {@link com.atomikos.jms.AtomikosConnectionFactoryBean}.
+ *
  * @author Josh Long
  */
 @Configuration
@@ -38,7 +45,7 @@ class AtomikosAutoConfiguration {
     @ConditionalOnMissingBean(name = "transactionManager")
     @DependsOn({JtaAutoConfiguration.TRANSACTION_MANAGER_NAME})
     public JtaTransactionManager transactionManager(
-
+            ConfigurableEnvironment environment,
             @TransactionManagerBean UserTransactionManager transactionManager) {
 
         JtaTransactionManager jtaTransactionManager = new JtaTransactionManager((TransactionManager) transactionManager);
@@ -58,8 +65,8 @@ class AtomikosAutoConfiguration {
     public UserTransactionService userTransactionService(ConfigurableEnvironment e) {
 
         // setup root data directory
-        String path = e.getProperty("spring.jta.atomikos.rootPath",
-                new File(System.getProperty("user.home"), "atomikosData").getAbsolutePath());
+        String atomikos = "atomikos";
+        String path = JtaAutoConfiguration.jtaRootPathFor(e, atomikos);
 
         String logBaseDirProperty = "com.atomikos.icatch.log_base_dir";
         String outputDirProperty = "com.atomikos.icatch.output_dir";
@@ -72,7 +79,8 @@ class AtomikosAutoConfiguration {
         rootDataDirProperties.put("com.atomikos.icatch.threaded_2pc", "false");
         rootDataDirProperties.put(autoEnroll, "false");
 
-        JtaAutoConfiguration.addEnvironmentProperties(e, rootDataDirProperties);
+        e.getPropertySources().addFirst(
+                new MapPropertySource(atomikos, rootDataDirProperties));
 
         // take out any well known properties from the environment and pass to Atomikos
         List<String> wellKnownAtomikosSystemProperties = Arrays.asList(
@@ -104,6 +112,7 @@ class AtomikosAutoConfiguration {
     }
 
 
+
     @ConditionalOnMissingBean
     @DependsOn(USER_TRANSACTION_SERVICE)
     @TransactionManagerBean
@@ -114,18 +123,5 @@ class AtomikosAutoConfiguration {
         userTransactionManager.setTransactionTimeout(TX_TIMEOUT);
         return userTransactionManager;
     }
-/*
-    @Bean
-    public InitializingBean initializingBean(final JtaTransactionManager jtaTransactionManager) {
-
-        JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
-
-        return new InitializingBean() {
-            @Override
-            public void afterPropertiesSet() throws Exception {
-            }
-        };
-    }*/
-
 
 }

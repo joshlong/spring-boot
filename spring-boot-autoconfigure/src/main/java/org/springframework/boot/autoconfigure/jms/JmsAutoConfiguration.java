@@ -38,6 +38,7 @@ import javax.jms.DeliveryMode;
  * {@link EnableAutoConfiguration Auto-configuration} for Spring JMS.
  *
  * @author Greg Turnquist
+ * @author Josh Long
  */
 @Configuration
 @ConditionalOnClass(JmsTemplate.class)
