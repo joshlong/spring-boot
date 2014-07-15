@@ -1,11 +1,12 @@
 package org.springframework.boot.autoconfigure.jta;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.context.annotation.Bean;
 
 /**
-*
-*/
+ *
+ */
 @java.lang.annotation.Target({java.lang.annotation.ElementType.FIELD,
         java.lang.annotation.ElementType.METHOD,
         java.lang.annotation.ElementType.PARAMETER,
@@ -18,4 +19,9 @@ import org.springframework.context.annotation.Bean;
 @Bean(name = JtaAutoConfiguration.USER_TRANSACTION_NAME)
 public @interface UserTransactionBean {
     String value() default "";
+
+    String initMethod() default "";
+
+    String destroyMethod() default AbstractBeanDefinition.INFER_METHOD;
+
 }

@@ -32,7 +32,6 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 import javax.jms.ConnectionFactory;
-import javax.jms.DeliveryMode;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for Spring JMS.
@@ -53,7 +52,7 @@ public class JmsAutoConfiguration {
     @Autowired
     private ConnectionFactory connectionFactory;
 
-    private JmsTemplate jmsTemplate(ConnectionFactory connectionFactory) {
+    protected JmsTemplate buildJmsTemplate() {
         JmsTemplate jmsTemplate = new JmsTemplate(this.connectionFactory);
         jmsTemplate.setPubSubDomain(this.properties.isPubSubDomain());
         boolean sessionTransacted = this.properties.isSessionTransacted();
@@ -67,14 +66,14 @@ public class JmsAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public JmsTemplate jmsTemplate() {
-        return jmsTemplate(this.connectionFactory);
+        return buildJmsTemplate();
     }
 
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnBean(JtaTransactionManager.class)
     public JmsTemplate jmsTemplate(JtaTransactionManager jtaTransactionManager) {
-        return jmsTemplate(this.connectionFactory);
+        return buildJmsTemplate();
     }
 
 }

@@ -1,5 +1,6 @@
 package org.springframework.boot.autoconfigure.jta;
 
+import bitronix.tm.jndi.BitronixContext;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
@@ -43,20 +44,23 @@ import java.io.File;
 @ConditionalOnClass(JtaTransactionManager.class)
 public class JtaAutoConfiguration {
 
+    @Configuration
+    public static class DefaultJtaConfiguration {
+        // todo ew. can't we do better than this?
+        @Bean
+        protected InitializingBean registerJtaTransactionManager(
+                JtaTransactionManager jtaTransactionManager) {
 
-    // todo ew. can't we do better than this?
-    @Bean
-    protected InitializingBean registerJtaTransactionManager(
-            JtaTransactionManager jtaTransactionManager) {
+            SpringJtaPlatform.JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
 
-        SpringJtaPlatform.JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
+            return new InitializingBean() {
+                @Override
+                public void afterPropertiesSet() throws Exception {
+                    // don't care
+                }
+            };
+        }
 
-        return new InitializingBean() {
-            @Override
-            public void afterPropertiesSet() throws Exception {
-                // don't care
-            }
-        };
     }
 
     /**
@@ -122,7 +126,13 @@ public class JtaAutoConfiguration {
     @ConditionalOnClass(com.atomikos.icatch.jta.UserTransactionManager.class)
     @Import(AtomikosAutoConfiguration.class)
     @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
-    public static class AtomikosJTaConfiguration {
+    public static class AtomikosJtaConfiguration {
     }
-
+/*
+    @Configuration
+    @Import(BitronixAutoConfiguration.class)
+    @ConditionalOnClass(BitronixContext.class)
+    @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
+    public static class BitronixJtaConfiguration {
+    }*/
 }

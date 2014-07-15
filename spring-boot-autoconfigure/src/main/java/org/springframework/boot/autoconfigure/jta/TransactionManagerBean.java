@@ -1,6 +1,7 @@
 package org.springframework.boot.autoconfigure.jta;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -18,4 +19,9 @@ import org.springframework.context.annotation.Bean;
 @Qualifier(JtaAutoConfiguration.TRANSACTION_MANAGER_NAME)
 public @interface TransactionManagerBean {
     String value() default "";
+
+    String initMethod() default "";
+
+    String destroyMethod() default AbstractBeanDefinition.INFER_METHOD;
+
 }

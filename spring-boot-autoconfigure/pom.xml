@@ -318,6 +318,18 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>9.3-1101-jdbc3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.btm</groupId>
+            <artifactId>btm</artifactId>
+            <version>2.1.4</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>com.atomikos</groupId>
             <artifactId>transactions-hibernate3</artifactId>
             <optional>true</optional>
@@ -332,11 +344,11 @@
             <artifactId>transactions-jdbc</artifactId>
             <optional>true</optional>
         </dependency>
-        <dependency>
+  <!--      <dependency>
             <groupId>org.jboss.spec.javax.transaction</groupId>
             <artifactId>jboss-transaction-api_1.1_spec</artifactId>
             <optional>true</optional>
-        </dependency>
+        </dependency>-->
         <!--      <dependency>
                   <groupId>org.jboss.narayana.jta</groupId>
                   <artifactId>jta</artifactId>

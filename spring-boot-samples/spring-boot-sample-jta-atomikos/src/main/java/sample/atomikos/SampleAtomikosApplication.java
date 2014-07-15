@@ -20,7 +20,9 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.Entity;
@@ -41,31 +43,31 @@ import java.util.List;
 @EnableAutoConfiguration(exclude = ActiveMQAutoConfiguration.class)
 public class SampleAtomikosApplication {
 
-
     public static void main(String[] args) {
-        SpringApplication.run(SampleAtomikosApplication.class, args);
+        SpringApplication.run(
+                SampleAtomikosApplication.class, args);
     }
 
     @Bean(initMethod = "init", destroyMethod = "close")
     public AtomikosDataSourceBean xaDataSource() {
 
-        AtomikosDataSourceBean xaDS = new AtomikosDataSourceBean();
-        xaDS.setUniqueResourceName("xaDataSource");
-        xaDS.setTestQuery("select now()");
-        xaDS.setXaDataSource(dataSource("127.0.0.1", "crm", "crm", "crm"));
-        xaDS.setPoolSize(10);
-
-        return xaDS;
+        AtomikosDataSourceBean xa = new AtomikosDataSourceBean();
+        xa.setXaDataSource(dataSource("127.0.0.1", "crm", "crm", "crm"));
+        xa.setUniqueResourceName("xaDataSource");
+        xa.setTestQuery("select now()");
+        xa.setPoolSize(this.poolSize);
+        return xa;
     }
+
+    int poolSize = 10;
 
     @Bean(initMethod = "init", destroyMethod = "close")
     public AtomikosConnectionFactoryBean xaConnectionFactory() {
-        AtomikosConnectionFactoryBean xaCF = new AtomikosConnectionFactoryBean();
-        xaCF.setXaConnectionFactory(connectionFactory("tcp://localhost:61616"));
-        xaCF.setUniqueResourceName("xaConnectionFactory");
-        xaCF.setPoolSize(10);
-        xaCF.setLocalTransactionMode(false);
-        return xaCF;
+        AtomikosConnectionFactoryBean xa = new AtomikosConnectionFactoryBean();
+        xa.setXaConnectionFactory(connectionFactory("tcp://localhost:61616"));
+        xa.setUniqueResourceName("xaConnectionFactory");
+        xa.setPoolSize(this.poolSize);
+        return xa;
     }
 
     private static javax.jms.XAQueueConnectionFactory connectionFactory(String url) {
@@ -88,20 +90,20 @@ public class SampleAtomikosApplication {
 
     @Bean
     public CommandLineRunner init(
+            final TransactionTemplate transactionTemplate,
             final JdbcTemplate jdbcTemplate,
             final AccountService accountService) {
         return new CommandLineRunner() {
 
             private final Logger logger = LoggerFactory.getLogger(getClass());
 
-            @Override
-            public void run(String... args) throws Exception {
 
+            protected void execute() {
                 jdbcTemplate.execute("delete from account");
 
                 logger.info(accountService.createAccount("pwebb", false).toString());
                 logger.info(accountService.createAccount("dsyer", false).toString());
-                logger.info(accountService.createAccount("jlong", true).toString());
+                logger.info(accountService.createAccount("jlong", false).toString());
 
                 List<Account> accountList = jdbcTemplate.query(
                         "select * from account", new RowMapper<Account>() {
@@ -114,8 +116,25 @@ public class SampleAtomikosApplication {
                 for (Account account : accountList) {
                     logger.info("account " + account.toString());
                 }
+            }
 
 
+            private boolean allTogether = false;
+
+
+            @Override
+            public void run(String... args) throws Exception {
+
+                if (!this.allTogether) {
+                    execute();
+                } else {
+                    transactionTemplate.execute(new TransactionCallbackWithoutResult() {
+                        @Override
+                        protected void doInTransactionWithoutResult(TransactionStatus status) {
+                            execute();
+                        }
+                    });
+                }
             }
         };
 
@@ -126,7 +145,8 @@ public class SampleAtomikosApplication {
 @Service
 class AccountService {
 
-    private static Logger logger = LoggerFactory.getLogger(AccountService.class);
+    private static Logger logger =
+            LoggerFactory.getLogger(AccountService.class);
 
     private JmsTemplate jmsTemplate;
     private AccountRepository accountRepository;
@@ -142,21 +162,23 @@ class AccountService {
     @Transactional
     public Account createAccount(String username, boolean rollback) {
 
+        jmsTemplate.convertAndSend("accounts", "hello, world!");
+
         Account account = this.accountRepository.save(new Account(username));
         String msg = account.getId() + ":" + account.getUsername();
 
-        jmsTemplate.convertAndSend("accounts", msg);
 
         logger.info("created account " + account.toString());
-
-
         logger.info("send message to 'accounts' destination " + msg);
+
         if (rollback) {
-            String err = "throwing an exception for account#" + account.getId() +
+            String err = "throwing an exception for account # " + account.getId() +
                     ". This record should not be visible in the DB or in JMS.";
             logger.info(err);
             throw new IllegalStateException(err);
         }
+
+        this.accountRepository.flush();
         return account;
     }
 
