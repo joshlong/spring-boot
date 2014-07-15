@@ -8,29 +8,32 @@ import javax.jms.XAConnectionFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class BitronixXaConnectionFactory<T extends XAConnectionFactory>
+public abstract class BitronixXaConnectionFactory<DS extends XAConnectionFactory>
         implements BeanNameAware, FactoryBean<PoolingConnectionFactory> {
-    private final Class<T> xaDataSourceClass;
+    private final Class<DS> xaDataSourceClass;
     private String uniqueNodeName;
 
-    public BitronixXaConnectionFactory(Class<T> xaDataSourceClass) {
+    public BitronixXaConnectionFactory(Class<DS> xaDataSourceClass) {
         this.xaDataSourceClass = xaDataSourceClass;
     }
 
     protected PoolingConnectionFactory buildXaConnectionFactory(
-            String uniqueNodeName, Class<T> xaDataSourceClassName)
+            String uniqueNodeName, Class<DS> xaDataSourceClassName)
             throws IllegalAccessException, InstantiationException {
 
         PoolingConnectionFactory poolingDataSource = new PoolingConnectionFactory();
 
         Map<String, Object> recordedProperties = new ConcurrentHashMap<String, Object>();
-        T recordingDataSource = PropertyRecordingProxyUtils.buildPropertyRecordingConnectionFactory(xaDataSourceClassName, recordedProperties);
+        DS recordingDataSource = PropertyRecordingProxyUtils.buildPropertyRecordingConnectionFactory(xaDataSourceClassName, recordedProperties);
         configureXaConnectionFactory(recordingDataSource);
 
         poolingDataSource.setClassName(xaDataSourceClassName.getName());
         poolingDataSource.setMaxPoolSize(10);
         poolingDataSource.setUniqueName(uniqueNodeName);
         poolingDataSource.getDriverProperties().putAll(recordedProperties);
+        poolingDataSource.setTestConnections( true);
+        poolingDataSource.setAutomaticEnlistingEnabled(true);
+        poolingDataSource.setAllowLocalTransactions(true);
         poolingDataSource.init();
 
         return poolingDataSource;
@@ -60,5 +63,5 @@ public abstract class BitronixXaConnectionFactory<T extends XAConnectionFactory>
      * client will be given a proxy to the instance which will record property configurations
      * and pass them through to the underlying {@link javax.jms.XAConnectionFactory}
      */
-    protected abstract void configureXaConnectionFactory(T xaDataSource);
+    protected abstract void configureXaConnectionFactory(DS xaDataSource);
 }
