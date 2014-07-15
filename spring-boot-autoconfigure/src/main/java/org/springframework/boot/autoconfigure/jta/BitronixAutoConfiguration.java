@@ -15,6 +15,9 @@ import org.springframework.transaction.jta.JtaTransactionManager;
 
 import javax.transaction.TransactionManager;
 
+/**
+ * @author Josh Long
+ */
 @Configuration
 class BitronixAutoConfiguration {
 
@@ -36,13 +39,16 @@ class BitronixAutoConfiguration {
     }
 
     @TransactionManagerBean(destroyMethod = "shutdown")
-    public BitronixTransactionManager jtaTransactionManager(bitronix.tm.Configuration configuration) {
+    public  TransactionManager bitronixTransactionManager(
+            bitronix.tm.Configuration configuration) {
         configuration.setDisableJmx(true);
         return TransactionManagerServices.getTransactionManager();
     }
 
     @Bean
-    public bitronix.tm.Configuration configuration(Environment environment) {
+    @ConditionalOnMissingBean
+    public bitronix.tm.Configuration bitronixConfiguration(
+            Environment environment) {
         bitronix.tm.Configuration configuration = TransactionManagerServices.getConfiguration();
         String serverId = environment.getProperty(
                 this.bitronixPropertyPrefix + "serverId", "spring-boot-jta-bitronix");
@@ -51,6 +57,7 @@ class BitronixAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
     public BitronixTransactionSynchronizationRegistry transactionSynchronizationRegistry(bitronix.tm.Configuration configuration) {
         return TransactionManagerServices.getTransactionSynchronizationRegistry();
     }

@@ -1,7 +1,6 @@
 package org.springframework.boot.autoconfigure.jta;
 
 import bitronix.tm.jndi.BitronixContext;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -10,7 +9,10 @@ import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.boot.autoconfigure.jms.JmsProperties;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -26,7 +28,6 @@ import java.io.File;
  * <OL>
  * <LI> Atomikos & (Tomcat || Jetty) </li>
  * <LI> Narayana & (Tomcat || Jetty) </li>
- * <LI> JOTM & (Tomcat || Jetty)</li>
  * <LI> BTM & (Tomcat || Jetty) </li>
  * <li>Standard Application server JTA search strategy as supported directly
  * by {@link org.springframework.transaction.jta.JtaTransactionManager}.</li>
@@ -44,24 +45,6 @@ import java.io.File;
 @ConditionalOnClass(JtaTransactionManager.class)
 public class JtaAutoConfiguration {
 
-    @Configuration
-    public static class DefaultJtaConfiguration {
-        // todo ew. can't we do better than this?
-        @Bean
-        protected InitializingBean registerJtaTransactionManager(
-                JtaTransactionManager jtaTransactionManager) {
-
-            SpringJtaPlatform.JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
-
-            return new InitializingBean() {
-                @Override
-                public void afterPropertiesSet() throws Exception {
-                    // don't care
-                }
-            };
-        }
-
-    }
 
     /**
      * Are we running in an environment that has basic JTA-capable types on the CLASSPATH
@@ -90,7 +73,6 @@ public class JtaAutoConfiguration {
         }
     }
 
-
     public static final String USER_TRANSACTION_NAME = "jtaUserTransaction";
 
     public static final String TRANSACTION_MANAGER_NAME = "jtaTransactionManager";
@@ -98,6 +80,9 @@ public class JtaAutoConfiguration {
     public static void configureJtaProperties(JtaTransactionManager jtaTransactionManager,
                                               JmsProperties jmsProperties,
                                               JpaProperties jpaProperties) {
+
+        SpringJtaPlatform.JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
+
         if (null != jmsProperties) {
             jmsProperties.setSessionTransacted(true);
         }
@@ -114,7 +99,6 @@ public class JtaAutoConfiguration {
                 new File(System.getProperty("user.home"), "jta/" + jtaDistribution + "Data").getAbsolutePath());
     }
 
-
     @Configuration
     @ConditionalOnClass(com.arjuna.ats.jta.UserTransaction.class)
     @Import(NarayanaAutoConfiguration.class)
@@ -128,11 +112,11 @@ public class JtaAutoConfiguration {
     @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
     public static class AtomikosJtaConfiguration {
     }
-/*
+
     @Configuration
     @Import(BitronixAutoConfiguration.class)
     @ConditionalOnClass(BitronixContext.class)
     @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
     public static class BitronixJtaConfiguration {
-    }*/
+    }
 }
