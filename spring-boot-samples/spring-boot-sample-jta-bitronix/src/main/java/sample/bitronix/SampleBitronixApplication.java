@@ -7,6 +7,7 @@ import org.postgresql.xa.PGXADataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -15,20 +16,27 @@ import org.springframework.boot.autoconfigure.jta.bitronix.BitronixXaDataSourceF
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementSetter;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionCallbackWithoutResult;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.jta.JtaTransactionManager;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -44,6 +52,10 @@ public class SampleBitronixApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(SampleBitronixApplication.class, args);
+    }
+
+    public static void wrench(String msg) {
+        throw new RuntimeException("Monkey wrench! " + msg);
     }
 
     @Bean
@@ -69,90 +81,186 @@ public class SampleBitronixApplication {
         };
     }
 
-    @Bean
-    public TransactionTemplate transactionTemplate(PlatformTransactionManager platformTransactionManager) {
-        return new TransactionTemplate(platformTransactionManager);
+    protected String[] names(String prefix, String... us) {
+        List<String> strings = new ArrayList<String>();
+        for (String u : us)
+            strings.add(prefix + u);
+        return strings.toArray(new String[strings.size()]);
+    }
+
+    @Autowired
+    public void announcedJtaTransactionManager(JtaTransactionManager transactionManager) {
+        System.out.println(PlatformTransactionManager.class.getName() + " = " + transactionManager);
     }
 
     @Bean
-    public CommandLineRunner init(final TransactionTemplate transactionTemplate,
-                                  final JdbcTemplate jdbcTemplate) {
-        return new CommandLineRunner() {
-
-            private Logger logger =  LoggerFactory.getLogger(getClass());
-
-            private void iterate (){
-
-                logger.info( "Iterating all the " + Account.class.getName() + "s.");
-                logger.info( "-----------------------------------------------");
-                List<Account> accountList = jdbcTemplate.query(
-                        "select * from account", new RowMapper<Account>() {
-                            @Override
-                            public Account mapRow(ResultSet rs, int rowNum) throws SQLException {
-                                return new Account(rs.getLong("id"), rs.getString("username"));
-                            }
-                        });
-
-                for (Account account : accountList) {
-                    logger.info("account " + account.toString());
-                }
-                logger.info( "-----------------------------------------------");
-            }
-            @Override
-            public void run(String... args) throws Exception {
-
-                transactionTemplate.execute(new TransactionCallbackWithoutResult() {
-                    @Override
-                    protected void doInTransactionWithoutResult(TransactionStatus status) {
-                        jdbcTemplate.update("delete from account");
-                    }
-                });
-
-                transactionTemplate.execute(
-                        new TransactionCallbackWithoutResult() {
-                            @Override
-                            protected void doInTransactionWithoutResult(TransactionStatus status) {
-                                iterate();
-                                for (final String u : "jlong,jwoo,mchang,mgray".split(",")) {
-                                    jdbcTemplate.update(
-                                            "insert into account(id, username) " +
-                                                    " values (nextval('hibernate_sequence'), ?)",
-                                            new PreparedStatementSetter() {
-                                                @Override
-                                                public void setValues(PreparedStatement ps) throws SQLException {
-                                                    ps.setString(1, u);
-                                                }
-                                            });
-                                }
-                                iterate();
-
-                                throw new RuntimeException("Monkey wrench!");
-                            }
-                        });
-            }
-        };
-    }
-/*
-    @Bean
-    public CommandLineRunner init(final JdbcTemplate jdbcTemplate,
-                                  final JtaTransactionManager jtaTransactionManager,
-                                  final AccountService accountService) {
+    public CommandLineRunner clean(final JdbcTemplate jdbcTemplate) {
         return new CommandLineRunner() {
             @Override
             public void run(String... args) throws Exception {
-
-                Logger logger = LoggerFactory.getLogger(getClass());
-
                 jdbcTemplate.execute("delete from account");
+            }
+        };
+    }
 
-                logger.info(accountService.createAccount("pwebb", false).toString());
-                logger.info(accountService.createAccount("dsyer", false).toString());
-                logger.info(accountService.createAccount("jlong", true).toString());
-
+    @Bean
+    public CommandLineRunner jpa(final JpaAccountService accountService) {
+        return new CommandLineRunner() {
+            @Override
+            public void run(String... args) throws Exception {
+                System.out.println();
+                System.out.println("JPA");
+                for (Account a : accountService.createAccounts(names("JPA ", "jlong", "mgray", "mchang"))) {
+                    System.out.println("created account: " + a.toString());
+                    System.out.println("returned account from DB query: " +
+                            accountService.readAccount(a.getId()));
+                }
 
             }
         };
-    }*/
+    }
+
+    @Bean
+    public CommandLineRunner jdbc(final JdbcAccountService accountService) {
+        return new CommandLineRunner() {
+            @Override
+            public void run(String... args) throws Exception {
+                System.out.println();
+                System.out.println("JDBC");
+                for (Account a : accountService.createAccounts(names("JDBC", "jlong", "mgray", "mchang"))) {
+                    System.out.println("created account: " + a.toString());
+                    System.out.println("returned account from DB query: " +
+                            accountService.readAccount(a.getId()));
+                }
+            }
+        };
+    }
+}
+
+interface AccountRepository extends JpaRepository<Account, Long> {
+}
+
+@Service
+class JpaAccountService {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final AccountRepository accountRepository;
+
+    @Autowired
+    public JpaAccountService(AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
+    }
+
+    @Transactional
+    public void deleteAllAccounts() {
+        this.accountRepository.deleteAllInBatch();
+    }
+
+    @Transactional(readOnly = true)
+    public Account readAccount(long id) {
+        return this.accountRepository.findOne(id);
+    }
+
+    @Transactional
+    public List<Account> createAccounts(String... usernames) {
+        List<Account> accounts = new ArrayList<Account>();
+        for (String u : usernames)
+            accounts.add(this.createAccount(u));
+        return accounts;
+    }
+
+    @Transactional
+    public Account createAccount(String username) {
+        return this.accountRepository.save(new Account(username));
+    }
+
+    @Transactional(readOnly = true)
+    public void iterateAccounts() {
+        logger.info("---------------------------------------------------------------");
+        logger.info("Iterating all the " + Account.class.getName() + "s.");
+        logger.info("---------------------------------------------------------------");
+        for (Account account : readAccounts()) {
+            logger.info("account " + account.toString());
+        }
+        logger.info("---------------------------------------------------------------");
+    }
+
+
+    @Transactional(readOnly = true)
+    public Collection<Account> readAccounts() {
+        return this.accountRepository.findAll();
+    }
+
+}
+
+@Service
+class JdbcAccountService {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final RowMapper<Account> accountRowMapper = new RowMapper<Account>() {
+        @Override
+        public Account mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new Account(rs.getLong("id"), rs.getString("username"));
+        }
+    };
+
+    @Autowired
+    public JdbcAccountService(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    @Transactional
+    public void deleteAllAccounts() {
+        this.jdbcTemplate.update("delete from account ");
+    }
+
+    @Transactional(readOnly = true)
+    public void iterateAccounts() {
+        logger.info("---------------------------------------------------------------");
+        logger.info("Iterating all the " + Account.class.getName() + "s.");
+        logger.info("---------------------------------------------------------------");
+        for (Account account : readAccounts()) {
+            logger.info("account " + account.toString());
+        }
+        logger.info("---------------------------------------------------------------");
+    }
+
+
+    public Account readAccount(long id) {
+        return this.jdbcTemplate.queryForObject(
+                "select * from account where id = ? ", this.accountRowMapper, (Object) id);
+    }
+
+    @Transactional
+    public Account createAccount(final String username) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        PreparedStatementCreatorFactory stmtFactory = new PreparedStatementCreatorFactory(
+                "insert into account(id, username) values (nextval('hibernate_sequence'), ?)", new int[]{Types.VARCHAR});
+        stmtFactory.setGeneratedKeysColumnNames(new String[]{"id"});
+        PreparedStatementCreator psc = stmtFactory.newPreparedStatementCreator(Arrays.asList(username));
+        jdbcTemplate.update(psc, keyHolder);
+        Number newAccountId = keyHolder.getKey();
+        return this.readAccount(newAccountId.longValue());
+    }
+
+    @Transactional
+    public List<Account> createAccounts(String... usernames) {
+        List<Account> accountList = new ArrayList<Account>();
+        for (String username : usernames)
+            accountList.add(this.createAccount(username));
+
+
+        return accountList;
+    }
+
+    @Transactional(readOnly = true)
+    public Collection<Account> readAccounts() {
+        return jdbcTemplate.query("select * from account", this.accountRowMapper);
+    }
+
 }
 
 

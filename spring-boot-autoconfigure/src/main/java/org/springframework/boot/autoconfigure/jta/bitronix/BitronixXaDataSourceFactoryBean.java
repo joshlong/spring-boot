@@ -47,12 +47,11 @@ public abstract class BitronixXaDataSourceFactoryBean<T extends XADataSource>
         this.uniqueNodeName = name + Long.toString(System.currentTimeMillis());
     }
 
-    protected PoolingDataSource buildXaDataSource(
+    protected PoolingDataSource buildXaDataSource (
             String uniqueNodeName, Class<T> xaDataSourceClassName)
             throws IllegalAccessException, InstantiationException {
 
         PoolingDataSource poolingDataSource = new PoolingDataSource();
-
         Map<String, Object> recordedProperties = new ConcurrentHashMap<String, Object>();
         T recordingDataSource = PropertyRecordingProxyUtils.buildPropertyRecordingXaDataSource(
                 xaDataSourceClassName, recordedProperties);
@@ -60,6 +59,8 @@ public abstract class BitronixXaDataSourceFactoryBean<T extends XADataSource>
 
         poolingDataSource.setClassName(xaDataSourceClassName.getName());
         poolingDataSource.setMaxPoolSize(10);
+        poolingDataSource.setAllowLocalTransactions(true);
+        poolingDataSource.setEnableJdbc4ConnectionTest( true);
         poolingDataSource.getDriverProperties().putAll(recordedProperties);
         poolingDataSource.setUniqueName(uniqueNodeName);
         poolingDataSource.init();
