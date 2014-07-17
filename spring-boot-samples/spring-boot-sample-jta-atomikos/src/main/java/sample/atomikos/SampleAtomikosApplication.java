@@ -6,6 +6,7 @@ import org.apache.activemq.ActiveMQXAConnectionFactory;
 import org.postgresql.xa.PGXADataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -14,14 +15,19 @@ import org.springframework.boot.autoconfigure.jms.activemq.ActiveMQAutoConfigura
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.jta.JtaTransactionManager;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -30,6 +36,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -38,14 +46,16 @@ import java.util.List;
  *
  * @author Josh Long
  */
+@EnableAspectJAutoProxy(proxyTargetClass = true)
 @Configuration
 @ComponentScan
 @EnableAutoConfiguration(exclude = ActiveMQAutoConfiguration.class)
 public class SampleAtomikosApplication {
 
+    private int poolSize = 10;
+
     public static void main(String[] args) {
-        SpringApplication.run(
-                SampleAtomikosApplication.class, args);
+        SpringApplication.run(SampleAtomikosApplication.class, args);
     }
 
     @Bean(initMethod = "init", destroyMethod = "close")
@@ -59,8 +69,6 @@ public class SampleAtomikosApplication {
         return xa;
     }
 
-    int poolSize = 10;
-
     @Bean(initMethod = "init", destroyMethod = "close")
     public AtomikosConnectionFactoryBean xaConnectionFactory() {
         AtomikosConnectionFactoryBean xa = new AtomikosConnectionFactoryBean();
@@ -70,11 +78,11 @@ public class SampleAtomikosApplication {
         return xa;
     }
 
-    private static javax.jms.XAQueueConnectionFactory connectionFactory(String url) {
+    private javax.jms.XAQueueConnectionFactory connectionFactory(String url) {
         return new ActiveMQXAConnectionFactory(url);
     }
 
-    private static javax.sql.XADataSource dataSource(String host, String db, String username, String pw) {
+    private javax.sql.XADataSource dataSource(String host, String db, String username, String pw) {
         PGXADataSource pgxaDataSource = new PGXADataSource();
         pgxaDataSource.setServerName(host);
         pgxaDataSource.setDatabaseName(db);
@@ -83,107 +91,178 @@ public class SampleAtomikosApplication {
         return pgxaDataSource;
     }
 
+
     @Bean
-    public TransactionTemplate transactionTemplate(PlatformTransactionManager platformTransactionManager) {
-        return new TransactionTemplate(platformTransactionManager);
+    public CommandLineRunner jpa(final JpaAccountService accountService) {
+        return new AccountServiceCommandLineRunner(accountService);
     }
 
     @Bean
-    public CommandLineRunner init(
-            final TransactionTemplate transactionTemplate,
-            final JdbcTemplate jdbcTemplate,
-            final AccountService accountService) {
-        return new CommandLineRunner() {
+    public CommandLineRunner jdbc(final JdbcAccountService accountService) {
+        return new AccountServiceCommandLineRunner(accountService);
+    }
+}
 
-            private final Logger logger = LoggerFactory.getLogger(getClass());
+class AccountServiceCommandLineRunner implements CommandLineRunner, BeanNameAware {
 
+    private final AccountService accountService;
+    private Logger logger = LoggerFactory.getLogger(getClass());
+    private String prefix;
+    private TransactionTemplate transactionTemplate;
 
-            protected void execute() {
-                jdbcTemplate.execute("delete from account");
+    @Autowired
+    public void configureTransactionTemplate(JtaTransactionManager txManager) {
+        this.transactionTemplate = new TransactionTemplate(txManager);
+    }
 
-                logger.info(accountService.createAccount("pwebb", false).toString());
-                logger.info(accountService.createAccount("dsyer", false).toString());
-                logger.info(accountService.createAccount("jlong", false).toString());
+    @Autowired
+    public AccountServiceCommandLineRunner(AccountService accountService) {
+        this.accountService = accountService;
+    }
 
-                List<Account> accountList = jdbcTemplate.query(
-                        "select * from account", new RowMapper<Account>() {
-                            @Override
-                            public Account mapRow(ResultSet rs, int rowNum) throws SQLException {
-                                return new Account(rs.getLong("id"), rs.getString("username"));
-                            }
-                        });
-
-                for (Account account : accountList) {
-                    logger.info("account " + account.toString());
-                }
-            }
-
-
-            private boolean allTogether = false;
-
-
+    @Override
+    public void run(String... args) throws Exception {
+        logger.info(this.prefix);
+        this.transactionTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
-            public void run(String... args) throws Exception {
-
-                if (!this.allTogether) {
-                    execute();
-                } else {
-                    transactionTemplate.execute(new TransactionCallbackWithoutResult() {
-                        @Override
-                        protected void doInTransactionWithoutResult(TransactionStatus status) {
-                            execute();
-                        }
-                    });
-                }
+            protected void doInTransactionWithoutResult(TransactionStatus status) {
+                accountService.createAccountAndNotify(prefix + "-jms");
+                iterateAccounts("insert");
+                status.setRollbackOnly();
             }
-        };
+        });
+        iterateAccounts("after");
+    }
 
+    protected void iterateAccounts(String msg) {
+        logger.info("---------------------------------------------------------------");
+        logger.info("accounts: " + this.prefix + ": " + msg);
+        logger.info("---------------------------------------------------------------");
+        for (Account account : this.accountService.readAccounts()) {
+            logger.info("account " + account.toString());
+        }
+        logger.info("---------------------------------------------------------------");
+    }
+
+    @Override
+    public void setBeanName(String name) {
+        this.prefix = name;
     }
 }
 
 
+interface AccountRepository extends JpaRepository<Account, Long> {
+}
+
+interface AccountService {
+    void deleteAllAccounts();
+
+    List<Account> readAccounts();
+
+    Account readAccount(long id);
+
+    Account createAccount(String username);
+
+    Account createAccountAndNotify(String username);
+}
+
 @Service
-class AccountService {
+class JpaAccountService implements AccountService {
 
-    private static Logger logger =
-            LoggerFactory.getLogger(AccountService.class);
+    private final JmsTemplate jmsTemplate;
 
-    private JmsTemplate jmsTemplate;
-    private AccountRepository accountRepository;
+    private final AccountRepository accountRepository;
 
     @Autowired
-    AccountService(AccountRepository accountRepository,
-                   JmsTemplate jmsTemplate) {
+    public JpaAccountService(JmsTemplate jmsTemplate,
+                             AccountRepository accountRepository) {
         this.accountRepository = accountRepository;
         this.jmsTemplate = jmsTemplate;
     }
 
+    @Transactional
+    public void deleteAllAccounts() {
+        this.accountRepository.deleteAllInBatch();
+    }
+
+    @Transactional(readOnly = true)
+    public Account readAccount(long id) {
+        return this.accountRepository.findOne(id);
+    }
 
     @Transactional
-    public Account createAccount(String username, boolean rollback) {
+    public Account createAccount(String username) {
+        return this.accountRepository.save(new Account(username));
+    }
 
-        jmsTemplate.convertAndSend("accounts", "hello, world!");
-
-        Account account = this.accountRepository.save(new Account(username));
-        String msg = account.getId() + ":" + account.getUsername();
-
-
-        logger.info("created account " + account.toString());
-        logger.info("send message to 'accounts' destination " + msg);
-
-        if (rollback) {
-            String err = "throwing an exception for account # " + account.getId() +
-                    ". This record should not be visible in the DB or in JMS.";
-            logger.info(err);
-            throw new IllegalStateException(err);
-        }
-
-        this.accountRepository.flush();
+    @Override
+    public Account createAccountAndNotify(String username) {
+        Account account = this.createAccount(username);
+        this.jmsTemplate.convertAndSend("accounts", account.toString());
         return account;
     }
 
-
+    @Transactional(readOnly = true)
+    public List<Account> readAccounts() {
+        return this.accountRepository.findAll();
+    }
 }
+
+@Service
+class JdbcAccountService implements AccountService {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    private final JmsTemplate jmsTemplate;
+
+    private final RowMapper<Account> accountRowMapper = new RowMapper<Account>() {
+        @Override
+        public Account mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new Account(rs.getLong("id"), rs.getString("username"));
+        }
+    };
+
+    @Autowired
+    public JdbcAccountService(JmsTemplate jmsTemplate, JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.jmsTemplate = jmsTemplate;
+    }
+
+    @Transactional
+    public void deleteAllAccounts() {
+        this.jdbcTemplate.update("delete from account");
+    }
+
+    @Transactional(readOnly = true)
+    public List<Account> readAccounts() {
+        return jdbcTemplate.query("select * from account", this.accountRowMapper);
+    }
+
+    @Transactional(readOnly = true)
+    public Account readAccount(long id) {
+        return this.jdbcTemplate.queryForObject("select * from account where id = ?", this.accountRowMapper, (Object) id);
+    }
+
+    @Transactional
+    public Account createAccountAndNotify(String u) {
+        Account account = this.createAccount(u);
+        this.jmsTemplate.convertAndSend("accounts", account.toString());
+        return account;
+    }
+
+    @Transactional
+    public Account createAccount(String username) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        PreparedStatementCreatorFactory stmtFactory = new PreparedStatementCreatorFactory(
+                "insert into account(id, username) values (nextval('hibernate_sequence'), ?)", new int[]{Types.VARCHAR});
+        stmtFactory.setGeneratedKeysColumnNames(new String[]{"id"});
+        PreparedStatementCreator psc = stmtFactory.newPreparedStatementCreator(Arrays.asList(username));
+        jdbcTemplate.update(psc, keyHolder);
+        Number newAccountId = keyHolder.getKey();
+        return this.readAccount(newAccountId.longValue());
+    }
+}
+
 
 @Entity
 class Account {
@@ -222,5 +301,3 @@ class Account {
     }
 }
 
-interface AccountRepository extends JpaRepository<Account, Long> {
-}

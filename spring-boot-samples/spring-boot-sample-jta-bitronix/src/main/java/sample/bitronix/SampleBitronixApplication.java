@@ -6,6 +6,7 @@ import org.apache.activemq.ActiveMQXAConnectionFactory;
 import org.postgresql.xa.PGXADataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -16,6 +17,7 @@ import org.springframework.boot.autoconfigure.jta.bitronix.BitronixXaDataSourceF
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
@@ -23,10 +25,13 @@ import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.jta.JtaTransactionManager;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -34,9 +39,7 @@ import javax.persistence.Id;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -45,6 +48,7 @@ import java.util.List;
  *
  * @author Josh Long
  */
+@EnableAspectJAutoProxy(proxyTargetClass = true)
 @Configuration
 @ComponentScan
 @EnableAutoConfiguration
@@ -52,10 +56,6 @@ public class SampleBitronixApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(SampleBitronixApplication.class, args);
-    }
-
-    public static void wrench(String msg) {
-        throw new RuntimeException("Monkey wrench! " + msg);
     }
 
     @Bean
@@ -81,74 +81,92 @@ public class SampleBitronixApplication {
         };
     }
 
-    protected String[] names(String prefix, String... us) {
-        List<String> strings = new ArrayList<String>();
-        for (String u : us)
-            strings.add(prefix + u);
-        return strings.toArray(new String[strings.size()]);
-    }
-
-    @Autowired
-    public void announcedJtaTransactionManager(JtaTransactionManager transactionManager) {
-        System.out.println(PlatformTransactionManager.class.getName() + " = " + transactionManager);
-    }
-
-    @Bean
-    public CommandLineRunner clean(final JdbcTemplate jdbcTemplate) {
-        return new CommandLineRunner() {
-            @Override
-            public void run(String... args) throws Exception {
-                jdbcTemplate.execute("delete from account");
-            }
-        };
-    }
-
     @Bean
     public CommandLineRunner jpa(final JpaAccountService accountService) {
-        return new CommandLineRunner() {
-            @Override
-            public void run(String... args) throws Exception {
-                System.out.println();
-                System.out.println("JPA");
-                for (Account a : accountService.createAccounts(names("JPA ", "jlong", "mgray", "mchang"))) {
-                    System.out.println("created account: " + a.toString());
-                    System.out.println("returned account from DB query: " +
-                            accountService.readAccount(a.getId()));
-                }
-
-            }
-        };
+        return new AccountServiceCommandLineRunner(accountService);
     }
 
     @Bean
     public CommandLineRunner jdbc(final JdbcAccountService accountService) {
-        return new CommandLineRunner() {
+        return new AccountServiceCommandLineRunner(accountService);
+    }
+
+}
+
+class AccountServiceCommandLineRunner implements CommandLineRunner, BeanNameAware {
+
+    private final AccountService accountService;
+    private Logger logger = LoggerFactory.getLogger(getClass());
+    private String prefix;
+    private TransactionTemplate transactionTemplate;
+
+    @Autowired
+    public void configureTransactionTemplate(JtaTransactionManager txManager) {
+        this.transactionTemplate = new TransactionTemplate(txManager);
+    }
+
+    @Autowired
+    public AccountServiceCommandLineRunner(AccountService accountService) {
+        this.accountService = accountService;
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        logger.info(this.prefix);
+        this.transactionTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
-            public void run(String... args) throws Exception {
-                System.out.println();
-                System.out.println("JDBC");
-                for (Account a : accountService.createAccounts(names("JDBC", "jlong", "mgray", "mchang"))) {
-                    System.out.println("created account: " + a.toString());
-                    System.out.println("returned account from DB query: " +
-                            accountService.readAccount(a.getId()));
-                }
+            protected void doInTransactionWithoutResult(TransactionStatus status) {
+                accountService.createAccountAndNotify(prefix + "-jms");
+                iterateAccounts("insert");
+                status.setRollbackOnly();
             }
-        };
+        });
+        iterateAccounts("after");
+    }
+
+    protected void iterateAccounts(String msg) {
+        logger.info("---------------------------------------------------------------");
+        logger.info("accounts: " + this.prefix + ": " + msg);
+        logger.info("---------------------------------------------------------------");
+        for (Account account : this.accountService.readAccounts()) {
+            logger.info("account " + account.toString());
+        }
+        logger.info("---------------------------------------------------------------");
+    }
+
+    @Override
+    public void setBeanName(String name) {
+        this.prefix = name;
     }
 }
 
 interface AccountRepository extends JpaRepository<Account, Long> {
 }
 
-@Service
-class JpaAccountService {
+interface AccountService {
+    void deleteAllAccounts();
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    List<Account> readAccounts();
+
+    Account readAccount(long id);
+
+    Account createAccount(String username);
+
+    Account createAccountAndNotify(String username);
+}
+
+@Service
+class JpaAccountService implements AccountService {
+
+    private final JmsTemplate jmsTemplate;
+
     private final AccountRepository accountRepository;
 
     @Autowired
-    public JpaAccountService(AccountRepository accountRepository) {
+    public JpaAccountService(JmsTemplate jmsTemplate,
+                             AccountRepository accountRepository) {
         this.accountRepository = accountRepository;
+        this.jmsTemplate = jmsTemplate;
     }
 
     @Transactional
@@ -162,43 +180,29 @@ class JpaAccountService {
     }
 
     @Transactional
-    public List<Account> createAccounts(String... usernames) {
-        List<Account> accounts = new ArrayList<Account>();
-        for (String u : usernames)
-            accounts.add(this.createAccount(u));
-        return accounts;
-    }
-
-    @Transactional
     public Account createAccount(String username) {
         return this.accountRepository.save(new Account(username));
     }
 
-    @Transactional(readOnly = true)
-    public void iterateAccounts() {
-        logger.info("---------------------------------------------------------------");
-        logger.info("Iterating all the " + Account.class.getName() + "s.");
-        logger.info("---------------------------------------------------------------");
-        for (Account account : readAccounts()) {
-            logger.info("account " + account.toString());
-        }
-        logger.info("---------------------------------------------------------------");
+    @Override
+    public Account createAccountAndNotify(String username) {
+        Account account = this.createAccount(username);
+        this.jmsTemplate.convertAndSend("accounts", account.toString());
+        return account;
     }
 
-
     @Transactional(readOnly = true)
-    public Collection<Account> readAccounts() {
+    public List<Account> readAccounts() {
         return this.accountRepository.findAll();
     }
-
 }
 
 @Service
-class JdbcAccountService {
+class JdbcAccountService implements AccountService {
 
     private final JdbcTemplate jdbcTemplate;
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final JmsTemplate jmsTemplate;
 
     private final RowMapper<Account> accountRowMapper = new RowMapper<Account>() {
         @Override
@@ -208,34 +212,35 @@ class JdbcAccountService {
     };
 
     @Autowired
-    public JdbcAccountService(JdbcTemplate jdbcTemplate) {
+    public JdbcAccountService(JmsTemplate jmsTemplate, JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.jmsTemplate = jmsTemplate;
     }
 
     @Transactional
     public void deleteAllAccounts() {
-        this.jdbcTemplate.update("delete from account ");
+        this.jdbcTemplate.update("delete from account");
     }
 
     @Transactional(readOnly = true)
-    public void iterateAccounts() {
-        logger.info("---------------------------------------------------------------");
-        logger.info("Iterating all the " + Account.class.getName() + "s.");
-        logger.info("---------------------------------------------------------------");
-        for (Account account : readAccounts()) {
-            logger.info("account " + account.toString());
-        }
-        logger.info("---------------------------------------------------------------");
+    public List<Account> readAccounts() {
+        return jdbcTemplate.query("select * from account", this.accountRowMapper);
     }
 
-
+    @Transactional(readOnly = true)
     public Account readAccount(long id) {
-        return this.jdbcTemplate.queryForObject(
-                "select * from account where id = ? ", this.accountRowMapper, (Object) id);
+        return this.jdbcTemplate.queryForObject("select * from account where id = ?", this.accountRowMapper, (Object) id);
     }
 
     @Transactional
-    public Account createAccount(final String username) {
+    public Account createAccountAndNotify(String u) {
+        Account account = this.createAccount(u);
+        this.jmsTemplate.convertAndSend("accounts", account.toString());
+        return account;
+    }
+
+    @Transactional
+    public Account createAccount(String username) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         PreparedStatementCreatorFactory stmtFactory = new PreparedStatementCreatorFactory(
                 "insert into account(id, username) values (nextval('hibernate_sequence'), ?)", new int[]{Types.VARCHAR});
@@ -245,22 +250,6 @@ class JdbcAccountService {
         Number newAccountId = keyHolder.getKey();
         return this.readAccount(newAccountId.longValue());
     }
-
-    @Transactional
-    public List<Account> createAccounts(String... usernames) {
-        List<Account> accountList = new ArrayList<Account>();
-        for (String username : usernames)
-            accountList.add(this.createAccount(username));
-
-
-        return accountList;
-    }
-
-    @Transactional(readOnly = true)
-    public Collection<Account> readAccounts() {
-        return jdbcTemplate.query("select * from account", this.accountRowMapper);
-    }
-
 }
 
 
@@ -301,49 +290,3 @@ class Account {
     }
 }
 
-
-/*
-
-@Service
-class AccountService {
-
-    private static Logger logger = LoggerFactory.getLogger(AccountService.class);
-
-    private JmsTemplate jmsTemplate;
-    private AccountRepository accountRepository;
-
-    @Autowired
-    AccountService(AccountRepository accountRepository,
-                   JmsTemplate jmsTemplate) {
-        this.accountRepository = accountRepository;
-        this.jmsTemplate = jmsTemplate;
-    }
-
-
-    @Transactional
-    public Account createAccount(String username, boolean rollback) {
-
-        Account account = this.accountRepository.save(new Account(username));
-        String msg = account.getId() + ":" + account.getUsername();
-
-        jmsTemplate.convertAndSend("accounts", msg);
-
-        logger.info("created account " + account.toString());
-
-
-        logger.info("send message to 'accounts' destination " + msg);
-        if (rollback) {
-            String err = "throwing an exception for account#" + account.getId() +
-                    ". This record should not be visible in the DB or in JMS.";
-            logger.info(err);
-            throw new IllegalStateException(err);
-        }
-        return account;
-    }
-
-
-}
-
-interface AccountRepository extends JpaRepository<Account, Long> {
-}
-*/
