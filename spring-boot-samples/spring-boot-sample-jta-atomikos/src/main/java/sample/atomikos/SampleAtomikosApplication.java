@@ -126,7 +126,8 @@ class AccountServiceCommandLineRunner implements CommandLineRunner, BeanNameAwar
         this.transactionTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             protected void doInTransactionWithoutResult(TransactionStatus status) {
-                accountService.createAccountAndNotify(prefix + "-jms");
+                accountService.createAccountAndNotify(
+                        AccountServiceCommandLineRunner.this.prefix + "-jms");
                 iterateAccounts("insert");
                 status.setRollbackOnly();
             }
