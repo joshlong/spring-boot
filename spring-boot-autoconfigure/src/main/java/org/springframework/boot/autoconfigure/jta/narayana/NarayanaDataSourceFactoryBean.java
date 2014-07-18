@@ -1,4 +1,4 @@
-package org.springframework.boot.autoconfigure.jta;
+package org.springframework.boot.autoconfigure.jta.narayana;
 
 import com.arjuna.ats.internal.jdbc.DynamicClass;
 import com.arjuna.ats.jdbc.TransactionalDriver;
@@ -14,6 +14,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * wraps the {@link com.arjuna.ats.jdbc.TransactionalDriver} implementation that JBoss TM already ships with
+ * as a generic, XA-aware {@link javax.sql.DataSource}.
  *
  * @author Josh Long
  */
