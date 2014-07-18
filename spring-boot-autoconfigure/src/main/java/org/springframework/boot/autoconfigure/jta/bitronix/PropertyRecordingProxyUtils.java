@@ -10,6 +10,16 @@ import java.util.Map;
 
 abstract class PropertyRecordingProxyUtils {
 
+    public static <MQ extends XAConnectionFactory> MQ getPropertyRecordingConnectionFactory(
+            final Class<MQ> clzz, final Map<String, Object> holderForProperties) {
+        return getPropertyRecordingProxy(clzz, holderForProperties);
+    }
+
+    public static <DS extends XADataSource> DS getPropertyRecordingDataSource(
+            final Class<DS> clzz, final Map<String, Object> holderForProperties) {
+        return getPropertyRecordingProxy(clzz, holderForProperties);
+    }
+
     private static void record(MethodInvocation methodInvocation, Map<String, Object> holder) {
         String setterPrefix = "set";
         String methodInvName = methodInvocation.getMethod().getName();
@@ -24,42 +34,29 @@ abstract class PropertyRecordingProxyUtils {
         }
     }
 
-    private static MethodInterceptor recordingInterceptor(final Map<String, Object> properties) {
-
-        return new MethodInterceptor() {
-            @Override
-            public Object invoke(MethodInvocation methodInvocation) throws Throwable {
-
-                record(methodInvocation, properties);
-
-                if (methodInvocation.getMethod().getName().equals("toString"))
-                    return "a property recording proxy around a XA resource for Bitronix. " +
-                            "All calls to this proxy will be ignored and are only " +
-                            "to facilitate configuring a Bitronix-enlisted XA resource.";
-
-                return null;
-            }
-        };
-    }
-
-    private static <T> T resource(final Class<T> clzz, final Map<String, Object> holderForProperties) {
+    @SuppressWarnings("unchecked")
+    private static <T> T getPropertyRecordingProxy(final Class<T> clzz, final Map<String, Object> holderForProperties) {
         ProxyFactoryBean proxyFactoryBean = new ProxyFactoryBean();
         proxyFactoryBean.setTargetClass(clzz);
         proxyFactoryBean.setProxyTargetClass(true);
         proxyFactoryBean.setAutodetectInterfaces(true);
+
         proxyFactoryBean.addAdvice(
-                recordingInterceptor(holderForProperties));
+                new MethodInterceptor() {
+                    @Override
+                    public Object invoke(MethodInvocation methodInvocation) throws Throwable {
+
+                        record(methodInvocation, holderForProperties);
+
+                        if (methodInvocation.getMethod().getName().equals("toString"))
+                            return "a property recording proxy around a XA resource for Bitronix. " +
+                                    "All calls to this proxy will be ignored and are only " +
+                                    "to facilitate configuring a Bitronix-enlisted XA resource.";
+
+                        return null;
+                    }
+                });
         return (T) proxyFactoryBean.getObject();
-    }
-
-    public static <MQ extends XAConnectionFactory> MQ buildPropertyRecordingConnectionFactory(
-            final Class<MQ> clzz, final Map<String, Object> holderForProperties) {
-        return resource(clzz, holderForProperties);
-    }
-
-    public static <DS extends XADataSource> DS buildPropertyRecordingXaDataSource(
-            final Class<DS> clzz, final Map<String, Object> holderForProperties) {
-        return resource(clzz, holderForProperties);
     }
 
 }

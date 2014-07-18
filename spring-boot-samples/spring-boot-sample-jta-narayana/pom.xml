@@ -46,32 +46,57 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.jboss</groupId>
+            <artifactId>jboss-transaction-spi</artifactId>
+            <version>7.1.0.Final</version>
+        </dependency>
 
-    <!--    <dependency>
-            <groupId>org.jboss.narayana.jts</groupId>
-            <artifactId>narayana-jts-all</artifactId>
-            <version>${narayana.version}</version>
-        </dependency>
         <dependency>
-            <groupId>org.jboss.narayana.jta</groupId>
-            <artifactId>jta</artifactId>
-            <version>${narayana.version}</version>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-jms-pool</artifactId>
+            <version>${activemq.version}</version>
         </dependency>
+
+        <!-- JAVAEE 7 API -->
         <dependency>
-            <groupId>org.jboss.narayana.jts</groupId>
-            <artifactId>narayana-jts-integration</artifactId>
-            <version>${narayana.version}</version>
-        </dependency>-->
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
+            <version>7.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- JTA implementation -->
         <dependency>
             <groupId>org.jboss.narayana.jta</groupId>
             <artifactId>narayana-jta</artifactId>
             <version>${narayana.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jboss.logmanager</groupId>
+                    <artifactId>jboss-logmanager</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+        <!-- JBoss transaction SPI. Required by JTA 1.2 implementation -->
+        <dependency>
+            <groupId>org.jboss</groupId>
+            <artifactId>jboss-transaction-spi</artifactId>
+            <version>7.1.0.Final</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jboss.logging</groupId>
+                    <artifactId>jboss-logging-spi</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
         <dependency>
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-client</artifactId>
             <version>${activemq.version}</version>
         </dependency>
+
 
         <dependency>
             <groupId>org.postgresql</groupId>

@@ -53,14 +53,14 @@ public abstract class BitronixXaDataSourceFactoryBean<T extends XADataSource>
 
         PoolingDataSource poolingDataSource = new PoolingDataSource();
         Map<String, Object> recordedProperties = new ConcurrentHashMap<String, Object>();
-        T recordingDataSource = PropertyRecordingProxyUtils.buildPropertyRecordingXaDataSource(
+        T recordingDataSource = PropertyRecordingProxyUtils.getPropertyRecordingDataSource(
                 xaDataSourceClassName, recordedProperties);
         configureXaDataSource(recordingDataSource);
 
         poolingDataSource.setClassName(xaDataSourceClassName.getName());
         poolingDataSource.setMaxPoolSize(10);
         poolingDataSource.setAllowLocalTransactions(true);
-        poolingDataSource.setEnableJdbc4ConnectionTest( true);
+        poolingDataSource.setEnableJdbc4ConnectionTest(true);
         poolingDataSource.getDriverProperties().putAll(recordedProperties);
         poolingDataSource.setUniqueName(uniqueNodeName);
         poolingDataSource.init();

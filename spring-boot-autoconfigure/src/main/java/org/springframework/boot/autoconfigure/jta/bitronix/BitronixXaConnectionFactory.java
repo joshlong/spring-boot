@@ -50,9 +50,9 @@ public abstract class BitronixXaConnectionFactory<DS extends XAConnectionFactory
     }
 
     /**
-     * This is the template method for all clients of this class: in it clients will be given
-     * an opportunity to configure a {@code proxy} object of the same type as you
-     * want to configure. At least this way you get type-safety and ease of configuration.
+     * clients are given a callback during which they
+     * may configure the {@link javax.sql.DataSource}
+     * instance of their choosing.
      */
     protected abstract void configureXaConnectionFactory(DS xaDataSource);
 
@@ -63,7 +63,7 @@ public abstract class BitronixXaConnectionFactory<DS extends XAConnectionFactory
         PoolingConnectionFactory poolingDataSource = new PoolingConnectionFactory();
 
         Map<String, Object> recordedProperties = new ConcurrentHashMap<String, Object>();
-        DS recordingDataSource = PropertyRecordingProxyUtils.buildPropertyRecordingConnectionFactory(xaDataSourceClassName, recordedProperties);
+        DS recordingDataSource = PropertyRecordingProxyUtils.getPropertyRecordingConnectionFactory(xaDataSourceClassName, recordedProperties);
         configureXaConnectionFactory(recordingDataSource);
 
         poolingDataSource.setClassName(xaDataSourceClassName.getName());

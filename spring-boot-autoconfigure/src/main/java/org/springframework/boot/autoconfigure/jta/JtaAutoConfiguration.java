@@ -22,20 +22,13 @@ import org.springframework.util.ClassUtils;
 import java.io.File;
 
 /**
- * Attempts to register JTA transaction managers.
- * <p> Will support several strategies. Thinking aloud, these might include:
+ * This auto-configuration registers JTA {@link javax.transaction.TransactionManager transactionManagers}
+ * from various standalone JTA providers like <A href="">Atomikos</A>,
+ * <A href="">Bitronix</A>, and <A href="">JBoss TM (a.k.a. Narayana, or Anjuna)</A>, if available.
  * <p>
- * <OL>
- * <LI> Atomikos & (Tomcat || Jetty) </li>
- * <LI> Narayana & (Tomcat || Jetty) </li>
- * <LI> BTM & (Tomcat || Jetty) </li>
- * <li>Standard Application server JTA search strategy as supported directly
- * by {@link org.springframework.transaction.jta.JtaTransactionManager}.</li>
- * </OL>
- * <p>
- * <p>
- * For a start, Spring Boot will try to pull well-known transactional resources in a
- * a given bean container.
+ * This auto-configuration registers a {@link org.springframework.transaction.jta.JtaTransactionManager}
+ * that uses a configured standalone JTA implementation or works with an application server's
+ * JNDI-bound {@link javax.transaction.TransactionManager}.
  *
  * @author Josh Long
  */

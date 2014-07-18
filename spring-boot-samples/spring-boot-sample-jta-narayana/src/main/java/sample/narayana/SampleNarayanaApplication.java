@@ -1,9 +1,12 @@
 package sample.narayana;
 
+import com.arjuna.ats.jta.TransactionManager;
 import org.apache.activemq.ActiveMQXAConnectionFactory;
+import org.apache.activemq.jms.pool.XaPooledConnectionFactory;
 import org.postgresql.xa.PGXADataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -13,15 +16,24 @@ import org.springframework.boot.autoconfigure.jta.NarayanaDataSourceFactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.jta.JtaTransactionManager;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.jms.ConnectionFactory;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -29,47 +41,32 @@ import javax.sql.DataSource;
 import javax.sql.XADataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Arrays;
 import java.util.List;
 
-
 /**
- * Interesting guide - http://jbossts.blogspot.com/2012/01/connecting-dots.html :-)
- * <p>
- * The roles, responsibilities and relationship between the JTA and JCA components of an app
- * server are critical considerations when you're trying to do without one. The JTA manages transaction lifecycle - begin/commit/rollback.
- * Most importantly, it make appropriate calls on any enlisted XAResources as the transaction progresses. But here is the bit that most users don't
- * pay attention to: A JTA does not magically know what resources you want to participate in the transaction. Telling it that is the JCA's job.
- * <p>
- * In a full on app server, the JCA manages connections to resource managers such as databases and message queues.
- * If you deploy those drivers/connectors in a manner that identifies them as XA enabled, the JCA ensures that they
- * are correctly associated with the transaction. Application code simply e.g. looks up the JNDI name for a connection pool and calls
- * getConnection(). The JCA intercepts the call, get the XAResource for the connection and passes it to the transaction manager.
- * <p>
- * In some cases you don't need a full JCA. You can often make do with a transaction manager aware XA connection pool,
- * which is essentially a subset of the JCA functionality. But you can't get away with only an XA aware driver or a non-XA connection pool.
- * Trying to do that leads to some interesting behaviour: your app will deploy and run, but you have a transaction and a connection that know nothing
- * about one another. Committing or rolling back the transaction won't commit or rollback the work in the database. oops.
- * <p>
- * So, you also need to wire in a JCA or suitable connection pooling implementation. Most 'standalone' JTA implementations ship with a simple
- * connection management solution that is suitable for light use. The one in JBossTS is called the TransactionalDriver. For serious deployments
- * you want IronJacamar or some other JCA that has robust and fast connection management.
- * <p>
- * So now you have wired up your JTA and JCA in Spring, but you are still not done because...
- * <p>
- * The standard contract between JTA and JCA does not include recovery management setup. Wiring up resources for crash recovery requires
- * a proprietary solution that differs for each transaction manager. The connection manager that ships with the transaction manager may
- * do this more or less automatically, but third party JCAs or XA aware connection pools probably won't.
- * So, go read the transaction manager documentation and write a few test cases.
- *
  * @author Josh Long
  */
 @Configuration
+@EnableAspectJAutoProxy(proxyTargetClass = true)
 @ComponentScan
 @EnableAutoConfiguration
 public class SampleNarayanaApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(SampleNarayanaApplication.class, args);
+    }
+
+    /**
+     * We can use a third-party JMS driver like ActiveMQ's {@link org.apache.activemq.jms.pool.XaPooledConnectionFactory}
+     * to make a connection-factory participate in JTA transactions.
+     */
+    private static XaPooledConnectionFactory xaPooledConnectionFactory(ConnectionFactory connectionFactory) {
+        XaPooledConnectionFactory xa = new XaPooledConnectionFactory();
+        xa.setTransactionManager(TransactionManager.transactionManager());
+        xa.setConnectionFactory(connectionFactory);
+        return xa;
     }
 
     private static ActiveMQXAConnectionFactory connectionFactory(String url) {
@@ -85,10 +82,6 @@ public class SampleNarayanaApplication {
         return pgxaDataSource;
     }
 
-    /**
-     * this is how the sausage is made: we build an XADataSource,
-     * wrap it, and then return a pool to that proxy.
-     */
     @Bean
     public FactoryBean<DataSource> dataSource() {
         XADataSource xaDataSource = dataSource("127.0.0.1", "crm", "crm", "crm");
@@ -101,88 +94,181 @@ public class SampleNarayanaApplication {
     }
 
     @Bean
-    public ActiveMQXAConnectionFactory connectionFactory() {
-        return connectionFactory("tcp://localhost:61616");
+    public ConnectionFactory connectionFactory() {
+        ConnectionFactory connectionFactory = connectionFactory("tcp://localhost:61616");
+        return xaPooledConnectionFactory(connectionFactory);
     }
 
     @Bean
-    public CommandLineRunner init(
-            final AccountService accountService,
-            final PlatformTransactionManager transactionManager,
-            final JdbcTemplate jdbcTemplate) {
-        return new CommandLineRunner() {
-            @Override
-            public void run(String... args) throws Exception {
+    public CommandLineRunner jpa(final JpaAccountService accountService) {
+        return new AccountServiceCommandLineRunner(accountService);
+    }
 
-                jdbcTemplate.execute("delete from account");
-
-                logger.info("transactionManager: " + transactionManager.toString());
-                listAccounts();
-                accountService.createAccount("jlong", false);
-                listAccounts();
-                accountService.createAccount("pwebb", true);
-                listAccounts();
-            }
-
-            private RowMapper<Account> accountRowMapper = new RowMapper<Account>() {
-                @Override
-                public Account mapRow(ResultSet rs, int rowNum) throws SQLException {
-                    return new Account(rs.getLong("id"), rs.getString("username"));
-                }
-            };
-
-            private Logger logger = LoggerFactory.getLogger(getClass());
-
-            private void listAccounts() {
-                List<Account> accountList = jdbcTemplate.query("select * from account", accountRowMapper);
-                for (Account account : accountList) {
-                    logger.info(account.toString());
-                }
-            }
-        };
+    @Bean
+    public CommandLineRunner jdbc(final JdbcAccountService accountService) {
+        return new AccountServiceCommandLineRunner(accountService);
     }
 
 }
 
-@Service
-class AccountService {
 
-    private static Logger logger = LoggerFactory.getLogger(AccountService.class);
+class AccountServiceCommandLineRunner implements CommandLineRunner, BeanNameAware {
 
-    private JmsTemplate jmsTemplate;
-    private AccountRepository accountRepository;
+    private final AccountService accountService;
+    private Logger logger = LoggerFactory.getLogger(getClass());
+    private String prefix;
+    private TransactionTemplate transactionTemplate;
 
     @Autowired
-    AccountService(AccountRepository accountRepository, JmsTemplate jmsTemplate) {
+    public void configureTransactionTemplate(JtaTransactionManager txManager) {
+        this.transactionTemplate = new TransactionTemplate(txManager);
+    }
+
+    @Autowired
+    public AccountServiceCommandLineRunner(AccountService accountService) {
+        this.accountService = accountService;
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        logger.info(this.prefix);
+        this.transactionTemplate.execute(new TransactionCallbackWithoutResult() {
+            @Override
+            protected void doInTransactionWithoutResult(TransactionStatus status) {
+                accountService.createAccountAndNotify(prefix + "-jms");
+                iterateAccounts("insert");
+                status.setRollbackOnly();
+            }
+        });
+        iterateAccounts("after");
+    }
+
+    protected void iterateAccounts(String msg) {
+        logger.info("---------------------------------------------------------------");
+        logger.info("accounts: " + this.prefix + ": " + msg);
+        logger.info("---------------------------------------------------------------");
+        for (Account account : this.accountService.readAccounts()) {
+            logger.info("account " + account.toString());
+        }
+        logger.info("---------------------------------------------------------------");
+    }
+
+    @Override
+    public void setBeanName(String name) {
+        this.prefix = name;
+    }
+}
+
+interface AccountRepository extends JpaRepository<Account, Long> {
+}
+
+interface AccountService {
+    void deleteAllAccounts();
+
+    List<Account> readAccounts();
+
+    Account readAccount(long id);
+
+    Account createAccount(String username);
+
+    Account createAccountAndNotify(String username);
+}
+
+@Service
+class JpaAccountService implements AccountService {
+
+    private final JmsTemplate jmsTemplate;
+
+    private final AccountRepository accountRepository;
+
+    @Autowired
+    public JpaAccountService(JmsTemplate jmsTemplate,
+                             AccountRepository accountRepository) {
         this.accountRepository = accountRepository;
         this.jmsTemplate = jmsTemplate;
     }
 
+    @Transactional
+    public void deleteAllAccounts() {
+        this.accountRepository.deleteAllInBatch();
+    }
+
+    @Transactional(readOnly = true)
+    public Account readAccount(long id) {
+        return this.accountRepository.findOne(id);
+    }
 
     @Transactional
-    public Account createAccount(String username, boolean rollback) {
+    public Account createAccount(String username) {
+        return this.accountRepository.save(new Account(username));
+    }
 
-        Account account = this.accountRepository.save(new Account(username));
-        String msg = account.getId() + " " + account.getUsername();
-
-        jmsTemplate.convertAndSend("accounts", msg);
-
-        logger.info("created account " + account.toString());
-
-        logger.info("send message to 'accounts' destination " + msg);
-        if (rollback) {
-            String err = "throwing an exception for account#" + account.getId() +
-                    ". This record should not be visible in the DB or in JMS.";
-            logger.info(err);
-            throw new IllegalStateException(err);
-        }
+    @Override
+    public Account createAccountAndNotify(String username) {
+        Account account = this.createAccount(username);
+        this.jmsTemplate.convertAndSend("accounts", account.toString());
         return account;
     }
 
-
+    @Transactional(readOnly = true)
+    public List<Account> readAccounts() {
+        return this.accountRepository.findAll();
+    }
 }
 
-interface AccountRepository extends JpaRepository<Account, Long> {
+@Service
+class JdbcAccountService implements AccountService {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    private final JmsTemplate jmsTemplate;
+
+    private final RowMapper<Account> accountRowMapper = new RowMapper<Account>() {
+        @Override
+        public Account mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new Account(rs.getLong("id"), rs.getString("username"));
+        }
+    };
+
+    @Autowired
+    public JdbcAccountService(JmsTemplate jmsTemplate, JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.jmsTemplate = jmsTemplate;
+    }
+
+    @Transactional
+    public void deleteAllAccounts() {
+        this.jdbcTemplate.update("delete from account");
+    }
+
+    @Transactional(readOnly = true)
+    public List<Account> readAccounts() {
+        return jdbcTemplate.query("select * from account", this.accountRowMapper);
+    }
+
+    @Transactional(readOnly = true)
+    public Account readAccount(long id) {
+        return this.jdbcTemplate.queryForObject("select * from account where id = ?", this.accountRowMapper, (Object) id);
+    }
+
+    @Transactional
+    public Account createAccountAndNotify(String u) {
+        Account account = this.createAccount(u);
+        this.jmsTemplate.convertAndSend("accounts", account.toString());
+        return account;
+    }
+
+    @Transactional
+    public Account createAccount(String username) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        PreparedStatementCreatorFactory stmtFactory = new PreparedStatementCreatorFactory(
+                "insert into account(id, username) values (nextval('hibernate_sequence'), ?)", new int[]{Types.VARCHAR});
+        stmtFactory.setGeneratedKeysColumnNames(new String[]{"id"});
+        PreparedStatementCreator psc = stmtFactory.newPreparedStatementCreator(Arrays.asList(username));
+        jdbcTemplate.update(psc, keyHolder);
+        Number newAccountId = keyHolder.getKey();
+        return this.readAccount(newAccountId.longValue());
+    }
 }
 
 
@@ -190,23 +276,10 @@ interface AccountRepository extends JpaRepository<Account, Long> {
 class Account {
     @Id
     @GeneratedValue
-    private long id;
-    private String username;
-
-    public long getId() {
-        return id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    Account(String username) {
-        this.username = username;
-    }
+    Long id;
+    String username;
 
     Account() {
-
     }
 
     @Override
@@ -218,8 +291,21 @@ class Account {
         return sb.toString();
     }
 
-    public Account(long id, String username) {
-        this.id = id;
+    Account(String username) {
         this.username = username;
     }
+
+    Account(Long id, String username) {
+        this.username = username;
+        this.id = id;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
 }
+
