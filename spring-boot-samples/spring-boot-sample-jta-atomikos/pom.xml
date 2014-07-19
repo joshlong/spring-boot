@@ -17,12 +17,9 @@
         <url>http://www.spring.io</url>
     </organization>
     <properties>
-        <atomikos.version>3.9.3</atomikos.version>
-        <main.basedir>${basedir}/../..</main.basedir>
+         <main.basedir>${basedir}/../..</main.basedir>
     </properties>
     <dependencies>
-
-
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jms</artifactId>
