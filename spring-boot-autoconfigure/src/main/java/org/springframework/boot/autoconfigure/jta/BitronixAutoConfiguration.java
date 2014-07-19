@@ -50,11 +50,11 @@ class BitronixAutoConfiguration extends AbstractJtaAutoConfiguration {
         return configuration;
     }
 
-    @Bean
+/*    @Bean
     @ConditionalOnMissingBean
     public BitronixTransactionSynchronizationRegistry transactionSynchronizationRegistry(bitronix.tm.Configuration configuration) {
         return TransactionManagerServices.getTransactionSynchronizationRegistry();
-    }
+    }*/
 
     @Override
     protected JtaTransactionManager buildJtaTransactionManager() throws Exception {

@@ -1,6 +1,8 @@
 package org.springframework.boot.autoconfigure.jta;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
@@ -62,7 +64,9 @@ class NarayanaAutoConfiguration extends AbstractJtaAutoConfiguration {
     }
 
 
-    private TransactionManager jtaTransactionManager() {
+    @Bean
+    @ConditionalOnMissingBean
+    public TransactionManager jtaTransactionManager() {
         configureNarayanaProperties(this.environment);
         return com.arjuna.ats.jta.TransactionManager.transactionManager();
     }

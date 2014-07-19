@@ -1,82 +1,63 @@
 package org.springframework.boot.autoconfigure.jta;
 
+import bitronix.tm.BitronixTransactionManager;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple;
 import com.atomikos.icatch.jta.UserTransactionManager;
-import com.atomikos.jdbc.AtomikosDataSourceBean;
-import com.atomikos.jms.AtomikosConnectionFactoryBean;
-import org.apache.activemq.ActiveMQXAConnectionFactory;
+import org.junit.After;
 import org.junit.Test;
-import org.postgresql.xa.PGXADataSource;
-import org.springframework.boot.autoconfigure.jms.JmsAutoConfiguration;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.transaction.jta.JtaTransactionManager;
-
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.springframework.util.Assert;
 
 /**
+ * Tests the JTA support.
+ * 
  * @author Josh Long
  */
 public class JtaAutoConfigurationTests {
 
-    private AnnotationConfigApplicationContext context;
+    private AnnotationConfigApplicationContext applicationContext;
 
-
-    public static class ExampleAtomikisConfiguration {
-
-        @Bean(initMethod = "init", destroyMethod = "close")
-        public AtomikosDataSourceBean xaDataSource() {
-
-            AtomikosDataSourceBean xaDS = new AtomikosDataSourceBean();
-            xaDS.setUniqueResourceName("xaDataSource");
-            xaDS.setTestQuery("select now()");
-            xaDS.setXaDataSource(dataSource("127.0.0.1", "crm", "crm", "crm"));
-            xaDS.setPoolSize(10);
-
-            return xaDS;
-        }
-
-        @Bean(initMethod = "init", destroyMethod = "close")
-        public AtomikosConnectionFactoryBean xaConnectionFactory() {
-            AtomikosConnectionFactoryBean xaCF = new AtomikosConnectionFactoryBean();
-            xaCF.setXaConnectionFactory(connectionFactory("tcp://localhost:61616"));
-            xaCF.setUniqueResourceName("xaConnectionFactory");
-            xaCF.setPoolSize(10);
-            xaCF.setLocalTransactionMode(false);
-            return xaCF;
-        }
-
-        private javax.jms.XAConnectionFactory connectionFactory(String url) {
-            return new ActiveMQXAConnectionFactory(url);
-        }
-
-        private javax.sql.XADataSource dataSource(String host, String db, String username, String pw) {
-            PGXADataSource pgxaDataSource = new PGXADataSource();
-            pgxaDataSource.setServerName(host);
-            pgxaDataSource.setDatabaseName(db);
-            pgxaDataSource.setUser(username);
-            pgxaDataSource.setPassword(pw);
-            return pgxaDataSource;
-        }
+    @After
+    public void close() {
+        if (null != this.applicationContext)
+            this.applicationContext.close();
     }
 
-  //  @Test
-    public void testDefaultAtomikosConfiguration() {
-
-
-        this.context = new AnnotationConfigApplicationContext(ExampleAtomikisConfiguration.class);
-        this.context.start();
-
-        JtaTransactionManager jtaTransactionManager = this.context.getBean(JtaTransactionManager.class);
-        JmsTemplate jmsTemplate = this.context.getBean(JmsTemplate.class);
-
-        assertNotNull("the jtaTransactionManager should not be null!", jtaTransactionManager);
-        assertTrue("transactionManager should be an Atomikos implementation.", jtaTransactionManager.getTransactionManager() instanceof UserTransactionManager);
-        assertNotNull("the jmsTemplate should not be null!", jmsTemplate);
-
+    @Test
+    public void testAtomikosAutoConfiguration() throws Exception {
+        defaultTestJtaConfiguration(AtomikosAutoConfiguration.class, UserTransactionManager.class);
     }
+
+    @Test
+    public void testBitronixAutoConfiguration() throws Exception {
+       defaultTestJtaConfiguration(BitronixAutoConfiguration.class, BitronixTransactionManager.class);
+    }
+
+    @Test
+    public void testNarayanaAutoConfiguration() throws Exception {
+        defaultTestJtaConfiguration(NarayanaAutoConfiguration.class, TransactionManagerImple.class);
+    }
+
+    private AnnotationConfigApplicationContext buildApplicationContextFrom(Class<?>... classes) {
+        AnnotationConfigApplicationContext annotationConfigApplicationContext
+                = new AnnotationConfigApplicationContext();
+        annotationConfigApplicationContext.register(classes);
+        annotationConfigApplicationContext.refresh();
+        this.applicationContext = annotationConfigApplicationContext;
+        return annotationConfigApplicationContext;
+    }
+
+    private void defaultTestJtaConfiguration(Class<?> classOfAutoConfiguration, Class<?> classOfTransactionManagerImpl) {
+        AnnotationConfigApplicationContext ac = this.buildApplicationContextFrom(classOfAutoConfiguration);
+        JtaTransactionManager jtaTransactionManager = ac.getBean(JtaTransactionManager.class);
+        Assert.notNull(jtaTransactionManager, "the transactionManager should not be null");
+        Assert.isAssignable(classOfTransactionManagerImpl, jtaTransactionManager.getTransactionManager().getClass(),
+                "expecting a subclass of type " + classOfTransactionManagerImpl.getName());
+        Assert.isTrue(
+                SpringJtaPlatform.JTA_TRANSACTION_MANAGER.get() == jtaTransactionManager,
+                "the configured JtaPlatform must have the same reference as the Spring context");
+    }
+
 
 }
