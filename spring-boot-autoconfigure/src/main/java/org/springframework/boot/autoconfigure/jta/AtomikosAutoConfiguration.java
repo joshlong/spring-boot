@@ -16,8 +16,9 @@ import javax.transaction.TransactionManager;
 import java.util.*;
 
 /**
- * Configures the <A href="http://www.atomikos.com/">Atomikos JTA</a> library.
- * Requires that clients register their {@link javax.sql.DataSource}s with
+ *
+ * Registers the <A href="http://www.atomikos.com/">Atomikos JTA</a> implementation and
+ * configures JTA support. Requires that clients register their {@link javax.sql.DataSource}s with
  * {@link com.atomikos.jdbc.nonxa.AtomikosNonXADataSourceBean} and their
  * JMS {@link javax.jms.ConnectionFactory}s with
  * {@link com.atomikos.jms.AtomikosConnectionFactoryBean}.

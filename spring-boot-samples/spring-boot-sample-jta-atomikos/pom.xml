@@ -17,7 +17,7 @@
         <url>http://www.spring.io</url>
     </organization>
     <properties>
-         <main.basedir>${basedir}/../..</main.basedir>
+        <main.basedir>${basedir}/../..</main.basedir>
     </properties>
     <dependencies>
         <dependency>
@@ -27,6 +27,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-client</artifactId>
+            <version>${activemq.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-jms-pool</artifactId>
+            <version>${activemq.version}</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>

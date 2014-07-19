@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jms.activemq.ActiveMQAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -49,7 +48,7 @@ import java.util.List;
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @Configuration
 @ComponentScan
-@EnableAutoConfiguration//(exclude = ActiveMQAutoConfiguration.class)
+@EnableAutoConfiguration
 public class SampleAtomikosApplication {
 
     private int poolSize = 10;

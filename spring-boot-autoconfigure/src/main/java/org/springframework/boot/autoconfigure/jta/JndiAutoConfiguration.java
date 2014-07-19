@@ -5,9 +5,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 /**
- * Creates the {@link org.springframework.transaction.jta.JtaTransactionManager}
- * by deferring to JNDI-bound {@link javax.transaction.UserTransaction}
- * and {@link javax.transaction.TransactionManager}
+ * Registers the standard {@link org.springframework.transaction.jta.JtaTransactionManager} and
+ * configures JTA support by looking up the required {@link javax.transaction.UserTransaction} and
+ * {@link javax.transaction.TransactionManager} in JNDI in well-known (and, often, not-so-well-known)
+ * locations. This assumes a full Java EE application server environment. In this case, resource-enlistment
+ * should happen naturally assuming you're talking to an appropriate {@link javax.sql.DataSource} or
+ * {@link javax.jms.ConnectionFactory}.
  *
  * @author Josh Long
  */

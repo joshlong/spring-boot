@@ -11,12 +11,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Auto-configuration for JBoss TM, called <a href="http://docs.jboss.org/jbosstm/5.0.0.M6">Narayana JTA</a>.
- * Clients must register {@link org.springframework.boot.autoconfigure.jta.narayana.NarayanaXaDataSourceFactoryBean}
- * wrappers for for JDBC {@link javax.sql.DataSource datasources} and are advised to look at
- * suitable XA-aware {@link javax.jms.ConnectionFactory} implementations.
- * <a href="http://activemq.apache.org/maven/apidocs/org/apache/activemq/pool/XaPooledConnectionFactory.html">
- * The ActiveMQ project one has one that seems generic-enough, for example</a>.
+ * Registers the <A href="http://docs.jboss.org/jbosstm/">Narayana JTA</a> implementation and
+ * configures JTA support. Clients may register their {@link javax.sql.DataSource}s
+ * with the {@link com.arjuna.ats.jdbc.TransactionalDriver}-wrapping
+ * {@link org.springframework.boot.autoconfigure.jta.narayana.NarayanaXaDataSourceFactoryBean}
+ * and their JMS {@link javax.jms.ConnectionFactory}s with a JTA-aware {@link javax.jms.ConnectionFactory}
+ * proxy, like <a href="http://activemq.apache.org/maven/apidocs/org/apache/activemq/pool/XaPooledConnectionFactory.html">
+ * the ActiveMQ project's <code>XaPooledConnectionFactory</code></a>
  *
  * @author Josh Long
  */

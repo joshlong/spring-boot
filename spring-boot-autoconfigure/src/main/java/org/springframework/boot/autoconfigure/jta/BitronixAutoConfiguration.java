@@ -13,18 +13,26 @@ import javax.transaction.TransactionManager;
 import java.io.File;
 
 /**
+ * Registers the <A href="http://docs.codehaus.org/display/BTM/Home">Bitronix JTA </A> implementation and
+ * configures JTA support. Requires that clients register their {@link javax.sql.DataSource}s with
+ * {@link bitronix.tm.resource.jdbc.PoolingDataSource} and their
+ * JMS {@link javax.jms.ConnectionFactory}s with {@link bitronix.tm.resource.jms.PoolingConnectionFactory}.
+ * It can be a little clumsy to configure the Bitronix pooling implementations.
+ * The {@link org.springframework.boot.autoconfigure.jta.bitronix.BitronixXaConnectionFactoryFactoryBean}
+ * and {@link org.springframework.boot.autoconfigure.jta.bitronix.BitronixXaDataSourceFactoryBean}
+ * provide a convenient, type-safe way to configure the Bitronix {@code -Pooling} implementations.
+ *
  * @author Josh Long
  */
 @Configuration
-class BitronixAutoConfiguration  extends AbstractJtaAutoConfiguration {
+class BitronixAutoConfiguration extends AbstractJtaAutoConfiguration {
 
     private String bitronixPropertyPrefix = "spring.jta.bitronix.";
 
     @Bean
     @ConditionalOnMissingBean
-    public TransactionManager bitronixTransactionManager(
-            bitronix.tm.Configuration configuration) {
-        configuration.setDisableJmx(true);
+    public TransactionManager bitronixTransactionManager( bitronix.tm.Configuration configuration) {
+        configuration.setDisableJmx(true); // todo properties
         return TransactionManagerServices.getTransactionManager();
     }
 

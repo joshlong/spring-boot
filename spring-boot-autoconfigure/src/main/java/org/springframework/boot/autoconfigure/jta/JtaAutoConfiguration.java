@@ -22,8 +22,9 @@ import java.io.File;
 
 /**
  * This auto-configuration registers JTA {@link javax.transaction.TransactionManager transactionManagers}
- * from various standalone JTA providers like <A href="">Atomikos</A>,
- * <A href="">Bitronix</A>, and <A href="">JBoss TM (a.k.a. Narayana, or Anjuna)</A>, if available.
+ * from various standalone JTA providers like <a href="http://www.atomikos.com">Atomikos</a>,
+ * <A href="http://docs.codehaus.org/display/BTM/Home">Bitronix</A>, and
+ * <A href="http://docs.jboss.org/jbosstm/">JBoss TM (a.k.a. Narayana, or Anjuna)</A>, if available.
  * <p>
  * This auto-configuration registers a {@link org.springframework.transaction.jta.JtaTransactionManager}
  * that uses a configured standalone JTA implementation or works with an application server's
