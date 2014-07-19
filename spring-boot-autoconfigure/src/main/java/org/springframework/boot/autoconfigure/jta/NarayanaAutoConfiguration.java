@@ -28,6 +28,13 @@ class NarayanaAutoConfiguration extends AbstractJtaAutoConfiguration {
 
     private String narayanaProperty = "spring.jta.narayana";
 
+    @Autowired
+    private ConfigurableEnvironment environment;
+
+    /**
+     *
+     * Narayana supports a few well-known properties 
+     */
     protected void configureNarayanaProperties(ConfigurableEnvironment environment) {
 
         // root file
@@ -63,16 +70,12 @@ class NarayanaAutoConfiguration extends AbstractJtaAutoConfiguration {
         */
     }
 
-
     @Bean
     @ConditionalOnMissingBean
     public TransactionManager jtaTransactionManager() {
         configureNarayanaProperties(this.environment);
         return com.arjuna.ats.jta.TransactionManager.transactionManager();
     }
-
-    @Autowired
-    private ConfigurableEnvironment environment;
 
     @Override
     protected JtaTransactionManager buildJtaTransactionManager() throws Exception {

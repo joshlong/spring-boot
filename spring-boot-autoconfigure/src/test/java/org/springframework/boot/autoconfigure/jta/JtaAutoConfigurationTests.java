@@ -11,7 +11,7 @@ import org.springframework.util.Assert;
 
 /**
  * Tests the JTA support.
- * 
+ *
  * @author Josh Long
  */
 public class JtaAutoConfigurationTests {
@@ -26,17 +26,20 @@ public class JtaAutoConfigurationTests {
 
     @Test
     public void testAtomikosAutoConfiguration() throws Exception {
-        defaultTestJtaConfiguration(AtomikosAutoConfiguration.class, UserTransactionManager.class);
+        testContextFor(AtomikosAutoConfiguration.class, UserTransactionManager.class);
     }
 
     @Test
     public void testBitronixAutoConfiguration() throws Exception {
-       defaultTestJtaConfiguration(BitronixAutoConfiguration.class, BitronixTransactionManager.class);
+        testContextFor(BitronixAutoConfiguration.class, BitronixTransactionManager.class);
     }
 
     @Test
     public void testNarayanaAutoConfiguration() throws Exception {
-        defaultTestJtaConfiguration(NarayanaAutoConfiguration.class, TransactionManagerImple.class);
+        AnnotationConfigApplicationContext ac = testContextFor(
+                NarayanaAutoConfiguration.class,
+                TransactionManagerImple.class);
+
     }
 
     private AnnotationConfigApplicationContext buildApplicationContextFrom(Class<?>... classes) {
@@ -48,7 +51,7 @@ public class JtaAutoConfigurationTests {
         return annotationConfigApplicationContext;
     }
 
-    private void defaultTestJtaConfiguration(Class<?> classOfAutoConfiguration, Class<?> classOfTransactionManagerImpl) {
+    private AnnotationConfigApplicationContext testContextFor(Class<?> classOfAutoConfiguration, Class<?> classOfTransactionManagerImpl) {
         AnnotationConfigApplicationContext ac = this.buildApplicationContextFrom(classOfAutoConfiguration);
         JtaTransactionManager jtaTransactionManager = ac.getBean(JtaTransactionManager.class);
         Assert.notNull(jtaTransactionManager, "the transactionManager should not be null");
@@ -57,6 +60,7 @@ public class JtaAutoConfigurationTests {
         Assert.isTrue(
                 SpringJtaPlatform.JTA_TRANSACTION_MANAGER.get() == jtaTransactionManager,
                 "the configured JtaPlatform must have the same reference as the Spring context");
+        return ac;
     }
 
 
