@@ -33,7 +33,7 @@ class NarayanaAutoConfiguration extends AbstractJtaAutoConfiguration {
 
     /**
      *
-     * Narayana supports a few well-known properties 
+     * Narayana supports a few well-known properties
      */
     protected void configureNarayanaProperties(ConfigurableEnvironment environment) {
 
