@@ -12,8 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jta.bitronix.BitronixConnectionFactoryFactoryBean;
-import org.springframework.boot.autoconfigure.jta.bitronix.BitronixDataSourceFactoryBean;
+import org.springframework.boot.autoconfigure.jta.bitronix.BitronixXaConnectionFactoryFactoryBean;
+import org.springframework.boot.autoconfigure.jta.bitronix.BitronixXaDataSourceFactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -60,7 +60,7 @@ public class SampleBitronixApplication {
 
     @Bean
     public FactoryBean<PoolingConnectionFactory> connectionFactory() {
-        return new BitronixConnectionFactoryFactoryBean<ActiveMQXAConnectionFactory>(ActiveMQXAConnectionFactory.class) {
+        return new BitronixXaConnectionFactoryFactoryBean<ActiveMQXAConnectionFactory>(ActiveMQXAConnectionFactory.class) {
             @Override
             protected void configureXaResource(ActiveMQXAConnectionFactory xa) {
                 xa.setBrokerURL("tcp://localhost:61616");
@@ -70,7 +70,7 @@ public class SampleBitronixApplication {
 
     @Bean
     public FactoryBean<PoolingDataSource> dataSource() {
-        return new BitronixDataSourceFactoryBean<PGXADataSource>(PGXADataSource.class) {
+        return new BitronixXaDataSourceFactoryBean<PGXADataSource>(PGXADataSource.class) {
             @Override
             protected void configureXaResource(PGXADataSource xa) {
                 xa.setServerName("127.0.0.1");

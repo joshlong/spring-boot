@@ -1,76 +1,35 @@
 package org.springframework.boot.autoconfigure.jta.bitronix;
 
 import bitronix.tm.resource.jms.PoolingConnectionFactory;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanNameAware;
-import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.InitializingBean;
 
 import javax.jms.XAConnectionFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
- @Deprecated
- abstract class BitronixXaConnectionFactoryFactoryBean<MQ extends XAConnectionFactory>
-        implements InitializingBean, BeanNameAware, FactoryBean<PoolingConnectionFactory> {
+/**
+ * Registers a Bitronix {@link bitronix.tm.resource.jms.PoolingConnectionFactory} that will participate
+ * in Bitronix-managed XA transactions.
+ *
+ * @param <XA> the type of the {@link javax.jms.XAConnectionFactory} subclass that you want to use.
+ * @author Josh Long
+ */
+public abstract class BitronixXaConnectionFactoryFactoryBean
+        <XA extends XAConnectionFactory> extends AbstractBitronixXaResourceFactoryBean<XA, PoolingConnectionFactory> {
 
-    /**
-     * We need this so that we can act at runtime on types of our {@link javax.sql.DataSource}.
-     * (#erasureproblems!)
-     */
-    private final Class<MQ> xaDataSourceClass;
-
-    /**
-     * Bitronix requires the concept of a node. We provide one using the
-     * bean's name plus the current time.
-     */
-    private String uniqueNodeName;
-
-    public BitronixXaConnectionFactoryFactoryBean(Class<MQ> xaDataSourceClass) {
-        this.xaDataSourceClass = xaDataSourceClass;
+    public BitronixXaConnectionFactoryFactoryBean(Class<XA> xaConnectionFactoryClass) {
+        super(xaConnectionFactoryClass, PoolingConnectionFactory.class);
     }
 
     @Override
-    public void setBeanName(String name) {
-        this.uniqueNodeName = name + Long.toString(System.currentTimeMillis());
-        LoggerFactory.getLogger(getClass()).info("uniqueNodeName: " + this.uniqueNodeName);
-    }
-
-    @Override
-    public PoolingConnectionFactory getObject() throws Exception {
-        return this.poolingConnectionFactory ;
-    }
-
-    @Override
-    public Class<?> getObjectType() {
-        return PoolingConnectionFactory.class;
-    }
-
-    @Override
-    public boolean isSingleton() {
-        return true;
-    }
-
-    /**
-     * clients are given a callback during which they
-     * may configure the {@link javax.sql.DataSource}
-     * instance of their choosing.
-     */
-    protected abstract void configureXaConnectionFactory(MQ xaDataSource);
-
-    protected PoolingConnectionFactory buildXaConnectionFactory(
-            String uniqueNodeName, Class<MQ> xaDataSourceClassName)
-            throws IllegalAccessException, InstantiationException {
-
+    public PoolingConnectionFactory build() throws Exception {
         PoolingConnectionFactory poolingDataSource = new PoolingConnectionFactory();
-
         Map<String, Object> recordedProperties = new ConcurrentHashMap<String, Object>();
-        MQ recordingDataSource = PropertyRecordingProxyUtils.getPropertyRecordingConnectionFactory(xaDataSourceClassName, recordedProperties);
-        configureXaConnectionFactory(recordingDataSource);
+        XA recordingDataSource = getPropertyRecordingProxy(this.getXaDriverClass(), recordedProperties);
+        this.configureXaResource(recordingDataSource);
 
-        poolingDataSource.setClassName(xaDataSourceClassName.getName());
+        poolingDataSource.setClassName(this.getXaDriverClass ().getName());
         poolingDataSource.setMaxPoolSize(10);
-        poolingDataSource.setUniqueName(uniqueNodeName);
+        poolingDataSource.setUniqueName(getUniqueNodeName());
         poolingDataSource.getDriverProperties().putAll(recordedProperties);
         poolingDataSource.setTestConnections(true);
         poolingDataSource.setAutomaticEnlistingEnabled(true);
@@ -78,12 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
         poolingDataSource.init();
 
         return poolingDataSource;
+
     }
 
-    private   PoolingConnectionFactory poolingConnectionFactory ;
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        this.poolingConnectionFactory = this.buildXaConnectionFactory(this.uniqueNodeName, this.xaDataSourceClass);
-    }
 }

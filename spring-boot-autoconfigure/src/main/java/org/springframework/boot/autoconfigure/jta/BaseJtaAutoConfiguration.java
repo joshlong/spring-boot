@@ -11,6 +11,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 /**
+ * Handles concerns common to all the JTA implementations, including registering the {@link org.springframework.transaction.jta.JtaTransactionManager},
+ * installing a {@link org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform} implementation that will delegate
+ * to Spring's registered {@link org.springframework.transaction.jta.JtaTransactionManager} to look-up
+ * the required {@link javax.transaction.UserTransaction} and {@link javax.transaction.TransactionManager}.
+ *
  * @author Josh Long
  */
 @Configuration

@@ -66,27 +66,6 @@ public class JtaAutoConfiguration {
         }
     }
 
-/*    public static final String USER_TRANSACTION_NAME = "jtaUserTransaction";
-
-    public static final String TRANSACTION_MANAGER_NAME = "jtaTransactionManager";
-
-    public static void configureJtaProperties(JtaTransactionManager jtaTransactionManager,
-                                              JmsProperties jmsProperties,
-                                              JpaProperties jpaProperties) {
-
-        SpringJtaPlatform.JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
-
-        if (null != jmsProperties) {
-            jmsProperties.setSessionTransacted(true);
-        }
-
-        if (jpaProperties != null) {
-            jpaProperties.getProperties().put(
-                    "hibernate.transaction.jta.platform", SpringJtaPlatform.class.getName());
-            jpaProperties.getProperties().put("javax.persistence.transactionType", "JTA");
-        }
-    }*/
-
     public static String jtaRootPathFor(ConfigurableEnvironment e, String jtaDistribution) {
         return e.getProperty("spring.jta." + jtaDistribution + ".rootPath",
                 new File(System.getProperty("user.home"), "jta/" + jtaDistribution + "Data").getAbsolutePath());

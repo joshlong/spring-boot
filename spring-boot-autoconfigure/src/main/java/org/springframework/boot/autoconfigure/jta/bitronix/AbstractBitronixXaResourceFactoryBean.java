@@ -1,9 +1,14 @@
 package org.springframework.boot.autoconfigure.jta.bitronix;
 
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
+import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
+
+import java.util.Map;
 
 /**
  * Convenient base type for Bitronix resource registration.
@@ -12,7 +17,7 @@ import org.springframework.util.Assert;
  * @param <BITRONIX_POOLED_RESOURCE> pooled instance
  * @author Josh Long
  */
-abstract class BaseBitronixResourceFactoryBean<XA_DRIVER, BITRONIX_POOLED_RESOURCE>
+abstract class AbstractBitronixXaResourceFactoryBean<XA_DRIVER, BITRONIX_POOLED_RESOURCE>
         implements InitializingBean, BeanNameAware, FactoryBean<BITRONIX_POOLED_RESOURCE> {
 
     private Class<XA_DRIVER> xaDriverClass;
@@ -22,7 +27,7 @@ abstract class BaseBitronixResourceFactoryBean<XA_DRIVER, BITRONIX_POOLED_RESOUR
 
     private String uniqueNodeName;
 
-    public BaseBitronixResourceFactoryBean(Class<XA_DRIVER> xaDriverClass, Class<BITRONIX_POOLED_RESOURCE> bitronixPooledResourceClass) {
+    public AbstractBitronixXaResourceFactoryBean(Class<XA_DRIVER> xaDriverClass, Class<BITRONIX_POOLED_RESOURCE> bitronixPooledResourceClass) {
         this.xaDriverClass = xaDriverClass;
         this.bitronixPooledResourceClass = bitronixPooledResourceClass;
         Assert.notNull(this.xaDriverClass, "you must provide a class type for the XA resource");
@@ -77,66 +82,43 @@ abstract class BaseBitronixResourceFactoryBean<XA_DRIVER, BITRONIX_POOLED_RESOUR
      */
     protected abstract void configureXaResource(XA_DRIVER xa);
 
-}
 
-/*
-
-public abstract class BitronixXaDataSourceFactoryBean<DS extends XADataSource>
-        implements InitializingBean, BeanNameAware, FactoryBean<PoolingDataSource> {
-
-    private final Class<DS> xaDataSourceClass;
-    private String uniqueNodeName;
-
-    public BitronixXaDataSourceFactoryBean(Class<DS> xaDataSourceClass) {
-        this.xaDataSourceClass = xaDataSourceClass;
+    protected void record(MethodInvocation methodInvocation, Map<String, Object> holder) {
+        String setterPrefix = "set";
+        String methodInvName = methodInvocation.getMethod().getName();
+        if (methodInvName.startsWith(setterPrefix)) {
+            String propertyName = methodInvName.substring(setterPrefix.length());
+            propertyName = Character.toLowerCase(propertyName.charAt(0)) +
+                    propertyName.substring(1);
+            Object[] args = methodInvocation.getArguments();
+            if (args.length == 1) {
+                holder.put(propertyName, args[0]);
+            }
+        }
     }
 
-    @Override
-    public PoolingDataSource getObject() throws Exception {
-        return this.poolingDataSource;
-    }
+    @SuppressWarnings("unchecked")
+    protected  <T> T getPropertyRecordingProxy(final Class<T> clzz, final Map<String, Object> holderForProperties) {
+        ProxyFactoryBean proxyFactoryBean = new ProxyFactoryBean();
+        proxyFactoryBean.setTargetClass(clzz);
+        proxyFactoryBean.setProxyTargetClass(true);
+        proxyFactoryBean.setAutodetectInterfaces(true);
 
-    @Override
-    public Class<?> getObjectType() {
-        return PoolingDataSource.class;
-    }
+        proxyFactoryBean.addAdvice(
+                new MethodInterceptor() {
+                    @Override
+                    public Object invoke(MethodInvocation methodInvocation) throws Throwable {
 
-    @Override
-    public boolean isSingleton() {
-        return true;
-    }
+                        record(methodInvocation, holderForProperties);
 
-    @Override
-    public void setBeanName(String name) {
-        this.uniqueNodeName = name + Long.toString(System.currentTimeMillis());
-    }
+                        if (methodInvocation.getMethod().getName().equals("toString"))
+                            return "a property recording proxy around a XA resource for Bitronix. " +
+                                    "All calls to this proxy will be ignored and are only " +
+                                    "to facilitate configuring a Bitronix-enlisted XA resource.";
 
-    protected abstract void configureXaDataSource(DS xaDataSource);
-
-    protected PoolingDataSource buildPoolingDataSource(
-            String uniqueNodeName, Class<DS> xaDataSourceClassName) {
-        PoolingDataSource ds = new PoolingDataSource();
-        Map<String, Object> recordedProperties = new ConcurrentHashMap<String, Object>();
-        DS recordingDataSource = PropertyRecordingProxyUtils.getPropertyRecordingDataSource(this.xaDataSourceClass, recordedProperties);
-
-        this.configureXaDataSource(recordingDataSource);
-
-        ds.setClassName(xaDataSourceClassName.getName());
-        ds.setMaxPoolSize(10);
-        ds.setAllowLocalTransactions(true);
-        ds.setEnableJdbc4ConnectionTest(true);
-        ds.getDriverProperties().putAll(recordedProperties);
-        ds.setUniqueName(uniqueNodeName);
-        ds.init();
-        return ds;
-    }
-
-    private PoolingDataSource poolingDataSource;
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        this.poolingDataSource = this.buildPoolingDataSource(
-                this.uniqueNodeName, xaDataSourceClass);
+                        return null;
+                    }
+                });
+        return (T) proxyFactoryBean.getObject();
     }
 }
-*/

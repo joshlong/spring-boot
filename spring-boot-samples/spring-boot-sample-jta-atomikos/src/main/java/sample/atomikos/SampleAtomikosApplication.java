@@ -129,7 +129,7 @@ class AccountServiceCommandLineRunner implements CommandLineRunner, BeanNameAwar
                 accountService.createAccountAndNotify(
                         AccountServiceCommandLineRunner.this.prefix + "-jms");
                 iterateAccounts("insert");
-                status.setRollbackOnly();
+                //status.setRollbackOnly();
             }
         });
         iterateAccounts("after");
