@@ -19,7 +19,7 @@ import org.springframework.transaction.jta.JtaTransactionManager;
  * @author Josh Long
  */
 @Configuration
-abstract class BaseJtaAutoConfiguration {
+abstract class AbstractJtaAutoConfiguration {
 
     /**
      * Well-known name for Spring's {@link org.springframework.transaction.PlatformTransactionManager}
@@ -39,7 +39,7 @@ abstract class BaseJtaAutoConfiguration {
 
         JtaTransactionManager jtaTransactionManager = buildJtaTransactionManager();
 
-        // make this available for JPA, if required.
+        // make this available for JPA integration with JTA, if required.
         SpringJtaPlatform.JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
 
         this.configureJtaTransactionManager(jtaTransactionManager);

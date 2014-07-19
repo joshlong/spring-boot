@@ -21,7 +21,7 @@ import java.util.Map;
  * @author Josh Long
  */
 @Configuration
-class NarayanaAutoConfiguration extends BaseJtaAutoConfiguration {
+class NarayanaAutoConfiguration extends AbstractJtaAutoConfiguration {
 
     private String narayanaProperty = "spring.jta.narayana";
 

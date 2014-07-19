@@ -25,7 +25,7 @@ import java.util.*;
  * @author Josh Long
  */
 @Configuration
-class AtomikosAutoConfiguration extends BaseJtaAutoConfiguration {
+class AtomikosAutoConfiguration extends AbstractJtaAutoConfiguration {
 
     public  static final String USER_TRANSACTION_SERVICE = "atomikosUserTransactionService";
 

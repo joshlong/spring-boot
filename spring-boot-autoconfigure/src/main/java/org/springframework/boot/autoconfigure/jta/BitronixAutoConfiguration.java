@@ -16,7 +16,7 @@ import java.io.File;
  * @author Josh Long
  */
 @Configuration
-class BitronixAutoConfiguration  extends BaseJtaAutoConfiguration {
+class BitronixAutoConfiguration  extends AbstractJtaAutoConfiguration {
 
     private String bitronixPropertyPrefix = "spring.jta.bitronix.";
 

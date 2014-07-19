@@ -1,18 +1,17 @@
 package org.springframework.boot.autoconfigure.jta;
 
-import bitronix.tm.jndi.BitronixContext;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
-import org.springframework.boot.autoconfigure.jms.JmsProperties;
-import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -71,31 +70,37 @@ public class JtaAutoConfiguration {
                 new File(System.getProperty("user.home"), "jta/" + jtaDistribution + "Data").getAbsolutePath());
     }
 
+    @Order(2)
+    @Configuration
+    @Import(JndiAutoConfiguration.class)
+    @Conditional(JtaCondition.class)
+    @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
+    @AutoConfigureAfter({NarayanaConfiguration.class, AtomikosConfiguration.class, BitronixConfiguration.class})
+    public static class JndiConfiguration {
+    }
+
+    @Order(0)
     @Configuration
     @ConditionalOnClass(com.arjuna.ats.jta.UserTransaction.class)
     @Import(NarayanaAutoConfiguration.class)
     @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
-    public static class NarayanaJtaConfiguration {
+    public static class NarayanaConfiguration {
     }
 
+    @Order(0)
     @Configuration
-    @ConditionalOnClass(com.atomikos.icatch.jta.UserTransactionManager.class)
     @Import(AtomikosAutoConfiguration.class)
+    @ConditionalOnClass(com.atomikos.icatch.jta.UserTransactionManager.class)
     @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
-    public static class AtomikosJtaConfiguration {
+    public static class AtomikosConfiguration {
     }
 
+    @Order(0)
     @Configuration
     @Import(BitronixAutoConfiguration.class)
-    @ConditionalOnClass(BitronixContext.class)
+    @ConditionalOnClass(bitronix.tm.jndi.BitronixContext.class)
     @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
-    public static class BitronixJtaConfiguration {
+    public static class BitronixConfiguration {
     }
 
-   /* @Configuration
-    @Import(JndiJtaAutoConfiguration.class)
-    @Conditional(JtaCondition.class)
-    @ConditionalOnMissingBean (name = "transactionManager", value = PlatformTransactionManager.class)
-    public static class JndiJtaConfiguration {
-    }*/
 }
