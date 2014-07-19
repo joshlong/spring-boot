@@ -12,8 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jta.bitronix.BitronixXaConnectionFactory;
-import org.springframework.boot.autoconfigure.jta.bitronix.BitronixXaDataSourceFactoryBean;
+import org.springframework.boot.autoconfigure.jta.bitronix.BitronixConnectionFactoryFactoryBean;
+import org.springframework.boot.autoconfigure.jta.bitronix.BitronixDataSourceFactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -59,24 +59,24 @@ public class SampleBitronixApplication {
     }
 
     @Bean
-    public FactoryBean<PoolingConnectionFactory> poolingConnectionFactory() {
-        return new BitronixXaConnectionFactory<ActiveMQXAConnectionFactory>(ActiveMQXAConnectionFactory.class) {
+    public FactoryBean<PoolingConnectionFactory> connectionFactory() {
+        return new BitronixConnectionFactoryFactoryBean<ActiveMQXAConnectionFactory>(ActiveMQXAConnectionFactory.class) {
             @Override
-            protected void configureXaConnectionFactory(ActiveMQXAConnectionFactory xaDataSource) {
-                xaDataSource.setBrokerURL("tcp://localhost:61616");
+            protected void configureXaResource(ActiveMQXAConnectionFactory xa) {
+                xa.setBrokerURL("tcp://localhost:61616");
             }
         };
     }
 
     @Bean
-    public FactoryBean<PoolingDataSource> poolingDataSource() {
-        return new BitronixXaDataSourceFactoryBean<PGXADataSource>(PGXADataSource.class) {
+    public FactoryBean<PoolingDataSource> dataSource() {
+        return new BitronixDataSourceFactoryBean<PGXADataSource>(PGXADataSource.class) {
             @Override
-            protected void configureXaDataSource(PGXADataSource pgxaDataSource) {
-                pgxaDataSource.setServerName("127.0.0.1");
-                pgxaDataSource.setDatabaseName("crm");
-                pgxaDataSource.setUser("crm");
-                pgxaDataSource.setPassword("crm");
+            protected void configureXaResource(PGXADataSource xa) {
+                xa.setServerName("127.0.0.1");
+                xa.setDatabaseName("crm");
+                xa.setUser("crm");
+                xa.setPassword("crm");
             }
         };
     }

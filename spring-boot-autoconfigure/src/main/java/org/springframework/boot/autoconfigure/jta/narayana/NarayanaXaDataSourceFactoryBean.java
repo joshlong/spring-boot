@@ -19,17 +19,46 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Josh Long
  */
-public class NarayanaDataSourceFactoryBean
-        implements BeanNameAware,
-        FactoryBean<DataSource> {
+public class NarayanaXaDataSourceFactoryBean
+        implements BeanNameAware, FactoryBean<DataSource> {
 
     private static Map<String, XADataSource> XA_DATA_SOURCE_MAP = new ConcurrentHashMap<String, XADataSource>();
 
+    /**
+     * This will be passed into the {@link com.arjuna.ats.internal.jdbc.DynamicClass} <em>driver</em>
+     */
     private String beanName;
+
+    /**
+     * The target {@link javax.sql.XADataSource} to which calls should be routed
+     */
     private final XADataSource xaDataSource;
-    private String user, password;
+
+    /**
+     * passed to the {@link com.arjuna.ats.jdbc.TransactionalDriver}
+     */
+    private String user;
+
+    /**
+     * passed to the {@link com.arjuna.ats.jdbc.TransactionalDriver}
+     */
+    private String password;
+
+    /**
+     * bit of indirection to lookup a {@link javax.sql.DataSource}
+     */
     private Class<? extends DynamicClass> dynamicClass = SpringDynamicClass.class;
 
+    /**
+     * Provides access to the original {@link javax.sql.DataSource}. I'm not sure why we
+     * need to provide this instead of a simple {@link javax.sql.DataSource} reference, but here it is.
+     * <p>
+     * We store all {@link javax.sql.DataSource} beans in the {@link #XA_DATA_SOURCE_MAP} map
+     * and key them by <code>beanName</code>. That  <code>beanName</code> is then
+     * passed as a property into the {@link com.arjuna.ats.jdbc.TransactionalDriver}
+     * which then looks the bean up by asking the {@link com.arjuna.ats.internal.jdbc.DynamicClass}
+     * implementation. In this case, that implementation just looks the bean up in the map.
+     */
     public static class SpringDynamicClass implements DynamicClass {
 
         @Override
@@ -42,12 +71,15 @@ public class NarayanaDataSourceFactoryBean
         this.dynamicClass = dynamicClass;
     }
 
+    /**
+     * Used to map our target {@link javax.sql.DataSource}
+     */
     @Override
     public void setBeanName(String name) {
         this.beanName = name;
     }
 
-    public NarayanaDataSourceFactoryBean(
+    public NarayanaXaDataSourceFactoryBean(
             XADataSource xaDataSource, String username, String password) {
         this.xaDataSource = xaDataSource;
         this.user = username;

@@ -16,14 +16,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * for the {@link bitronix.tm.resource.jdbc.PoolingDataSource} that's ultimately returned.
  *
  * @author Josh Long
- */
-public abstract class BitronixXaDataSourceFactoryBean<T extends XADataSource>
+ */@Deprecated
+  abstract class BitronixXaDataSourceFactoryBean<DS extends XADataSource>
         implements InitializingBean, BeanNameAware, FactoryBean<PoolingDataSource> {
 
-    private final Class<T> xaDataSourceClass;
+    private final Class<DS> xaDataSourceClass;
     private String uniqueNodeName;
 
-    public BitronixXaDataSourceFactoryBean(Class<T> xaDataSourceClass) {
+    public BitronixXaDataSourceFactoryBean(Class<DS> xaDataSourceClass) {
         this.xaDataSourceClass = xaDataSourceClass;
     }
 
@@ -47,33 +47,31 @@ public abstract class BitronixXaDataSourceFactoryBean<T extends XADataSource>
         this.uniqueNodeName = name + Long.toString(System.currentTimeMillis());
     }
 
-    protected PoolingDataSource buildXaDataSource (
-            String uniqueNodeName, Class<T> xaDataSourceClassName)
-            throws IllegalAccessException, InstantiationException {
+    protected abstract void configureXaDataSource(DS xaDataSource);
 
-        PoolingDataSource poolingDataSource = new PoolingDataSource();
+    protected PoolingDataSource buildPoolingDataSource(
+            String uniqueNodeName, Class<DS> xaDataSourceClassName) {
+        PoolingDataSource ds = new PoolingDataSource();
         Map<String, Object> recordedProperties = new ConcurrentHashMap<String, Object>();
-        T recordingDataSource = PropertyRecordingProxyUtils.getPropertyRecordingDataSource(
-                xaDataSourceClassName, recordedProperties);
-        configureXaDataSource(recordingDataSource);
+        DS recordingDataSource = PropertyRecordingProxyUtils.getPropertyRecordingDataSource(this.xaDataSourceClass, recordedProperties);
 
-        poolingDataSource.setClassName(xaDataSourceClassName.getName());
-        poolingDataSource.setMaxPoolSize(10);
-        poolingDataSource.setAllowLocalTransactions(true);
-        poolingDataSource.setEnableJdbc4ConnectionTest(true);
-        poolingDataSource.getDriverProperties().putAll(recordedProperties);
-        poolingDataSource.setUniqueName(uniqueNodeName);
-        poolingDataSource.init();
+        this.configureXaDataSource(recordingDataSource);
 
-        return poolingDataSource;
+        ds.setClassName(xaDataSourceClassName.getName());
+        ds.setMaxPoolSize(10);
+        ds.setAllowLocalTransactions(true);
+        ds.setEnableJdbc4ConnectionTest(true);
+        ds.getDriverProperties().putAll(recordedProperties);
+        ds.setUniqueName(uniqueNodeName);
+        ds.init();
+        return ds;
     }
-
-    protected abstract void configureXaDataSource(T xaDataSource);
 
     private PoolingDataSource poolingDataSource;
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        this.poolingDataSource = this.buildXaDataSource(this.uniqueNodeName, this.xaDataSourceClass);
+        this.poolingDataSource = this.buildPoolingDataSource(
+                this.uniqueNodeName, xaDataSourceClass);
     }
 }

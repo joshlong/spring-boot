@@ -66,7 +66,7 @@ public class JtaAutoConfiguration {
         }
     }
 
-    public static final String USER_TRANSACTION_NAME = "jtaUserTransaction";
+/*    public static final String USER_TRANSACTION_NAME = "jtaUserTransaction";
 
     public static final String TRANSACTION_MANAGER_NAME = "jtaTransactionManager";
 
@@ -85,7 +85,7 @@ public class JtaAutoConfiguration {
                     "hibernate.transaction.jta.platform", SpringJtaPlatform.class.getName());
             jpaProperties.getProperties().put("javax.persistence.transactionType", "JTA");
         }
-    }
+    }*/
 
     public static String jtaRootPathFor(ConfigurableEnvironment e, String jtaDistribution) {
         return e.getProperty("spring.jta." + jtaDistribution + ".rootPath",
@@ -112,4 +112,11 @@ public class JtaAutoConfiguration {
     @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
     public static class BitronixJtaConfiguration {
     }
+
+   /* @Configuration
+    @Import(JndiJtaAutoConfiguration.class)
+    @Conditional(JtaCondition.class)
+    @ConditionalOnMissingBean (name = "transactionManager", value = PlatformTransactionManager.class)
+    public static class JndiJtaConfiguration {
+    }*/
 }

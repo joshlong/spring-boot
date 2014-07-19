@@ -49,7 +49,7 @@ import java.util.List;
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @Configuration
 @ComponentScan
-@EnableAutoConfiguration(exclude = ActiveMQAutoConfiguration.class)
+@EnableAutoConfiguration//(exclude = ActiveMQAutoConfiguration.class)
 public class SampleAtomikosApplication {
 
     private int poolSize = 10;

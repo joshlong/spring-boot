@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jta.narayana.NarayanaDataSourceFactoryBean;
+import org.springframework.boot.autoconfigure.jta.narayana.NarayanaXaDataSourceFactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -26,7 +26,6 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.jta.JtaTransactionManager;
@@ -85,12 +84,7 @@ public class SampleNarayanaApplication {
     @Bean
     public FactoryBean<DataSource> dataSource() {
         XADataSource xaDataSource = dataSource("127.0.0.1", "crm", "crm", "crm");
-        return new NarayanaDataSourceFactoryBean(xaDataSource, "crm", "crm");
-    }
-
-    @Bean
-    public TransactionTemplate transactionTemplate(PlatformTransactionManager platformTransactionManager) {
-        return new TransactionTemplate(platformTransactionManager);
+        return new NarayanaXaDataSourceFactoryBean(xaDataSource, "crm", "crm");
     }
 
     @Bean

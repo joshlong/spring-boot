@@ -4,19 +4,21 @@ import bitronix.tm.resource.jms.PoolingConnectionFactory;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.InitializingBean;
 
 import javax.jms.XAConnectionFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class BitronixXaConnectionFactory<DS extends XAConnectionFactory>
-        implements BeanNameAware, FactoryBean<PoolingConnectionFactory> {
+ @Deprecated
+ abstract class BitronixXaConnectionFactoryFactoryBean<MQ extends XAConnectionFactory>
+        implements InitializingBean, BeanNameAware, FactoryBean<PoolingConnectionFactory> {
 
     /**
      * We need this so that we can act at runtime on types of our {@link javax.sql.DataSource}.
      * (#erasureproblems!)
      */
-    private final Class<DS> xaDataSourceClass;
+    private final Class<MQ> xaDataSourceClass;
 
     /**
      * Bitronix requires the concept of a node. We provide one using the
@@ -24,7 +26,7 @@ public abstract class BitronixXaConnectionFactory<DS extends XAConnectionFactory
      */
     private String uniqueNodeName;
 
-    public BitronixXaConnectionFactory(Class<DS> xaDataSourceClass) {
+    public BitronixXaConnectionFactoryFactoryBean(Class<MQ> xaDataSourceClass) {
         this.xaDataSourceClass = xaDataSourceClass;
     }
 
@@ -36,7 +38,7 @@ public abstract class BitronixXaConnectionFactory<DS extends XAConnectionFactory
 
     @Override
     public PoolingConnectionFactory getObject() throws Exception {
-        return this.buildXaConnectionFactory(this.uniqueNodeName, this.xaDataSourceClass);
+        return this.poolingConnectionFactory ;
     }
 
     @Override
@@ -54,16 +56,16 @@ public abstract class BitronixXaConnectionFactory<DS extends XAConnectionFactory
      * may configure the {@link javax.sql.DataSource}
      * instance of their choosing.
      */
-    protected abstract void configureXaConnectionFactory(DS xaDataSource);
+    protected abstract void configureXaConnectionFactory(MQ xaDataSource);
 
     protected PoolingConnectionFactory buildXaConnectionFactory(
-            String uniqueNodeName, Class<DS> xaDataSourceClassName)
+            String uniqueNodeName, Class<MQ> xaDataSourceClassName)
             throws IllegalAccessException, InstantiationException {
 
         PoolingConnectionFactory poolingDataSource = new PoolingConnectionFactory();
 
         Map<String, Object> recordedProperties = new ConcurrentHashMap<String, Object>();
-        DS recordingDataSource = PropertyRecordingProxyUtils.getPropertyRecordingConnectionFactory(xaDataSourceClassName, recordedProperties);
+        MQ recordingDataSource = PropertyRecordingProxyUtils.getPropertyRecordingConnectionFactory(xaDataSourceClassName, recordedProperties);
         configureXaConnectionFactory(recordingDataSource);
 
         poolingDataSource.setClassName(xaDataSourceClassName.getName());
@@ -76,5 +78,12 @@ public abstract class BitronixXaConnectionFactory<DS extends XAConnectionFactory
         poolingDataSource.init();
 
         return poolingDataSource;
+    }
+
+    private   PoolingConnectionFactory poolingConnectionFactory ;
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        this.poolingConnectionFactory = this.buildXaConnectionFactory(this.uniqueNodeName, this.xaDataSourceClass);
     }
 }

@@ -1,12 +1,7 @@
 package org.springframework.boot.autoconfigure.jta;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.jms.JmsProperties;
-import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.transaction.jta.JtaTransactionManager;
@@ -17,7 +12,7 @@ import java.util.Map;
 
 /**
  * Auto-configuration for JBoss TM, called <a href="http://docs.jboss.org/jbosstm/5.0.0.M6">Narayana JTA</a>.
- * Clients must register {@link org.springframework.boot.autoconfigure.jta.narayana.NarayanaDataSourceFactoryBean}
+ * Clients must register {@link org.springframework.boot.autoconfigure.jta.narayana.NarayanaXaDataSourceFactoryBean}
  * wrappers for for JDBC {@link javax.sql.DataSource datasources} and are advised to look at
  * suitable XA-aware {@link javax.jms.ConnectionFactory} implementations.
  * <a href="http://activemq.apache.org/maven/apidocs/org/apache/activemq/pool/XaPooledConnectionFactory.html">
@@ -26,15 +21,9 @@ import java.util.Map;
  * @author Josh Long
  */
 @Configuration
-class NarayanaAutoConfiguration {
+class NarayanaAutoConfiguration extends BaseJtaAutoConfiguration {
 
     private String narayanaProperty = "spring.jta.narayana";
-
-    @Autowired(required = false)
-    private JpaProperties jpaProperties;
-
-    @Autowired(required = false)
-    private JmsProperties jmsProperties;
 
     protected void configureNarayanaProperties(ConfigurableEnvironment environment) {
 
@@ -71,31 +60,17 @@ class NarayanaAutoConfiguration {
         */
     }
 
-    @Primary
-    @Bean(name = "transactionManager")
-    @ConditionalOnMissingBean(name = "transactionManager")
-    public JtaTransactionManager transactionManager() {
 
-
-        JtaTransactionManager jtaTransactionManager = new JtaTransactionManager(
-                this.jtaTransactionManager());
-        jtaTransactionManager.setAllowCustomIsolationLevels(true);
-        jtaTransactionManager.setFailEarlyOnGlobalRollbackOnly(true);
-        jtaTransactionManager.setRollbackOnCommitFailure(true);
-
-        JtaAutoConfiguration.configureJtaProperties(jtaTransactionManager, this.jmsProperties, this.jpaProperties);
-
-        return jtaTransactionManager;
-    }
-
-    @TransactionManagerBean
-    public TransactionManager jtaTransactionManager() {
-        configureNarayanaProperties(this.configurableEnvironment);
+    private TransactionManager jtaTransactionManager() {
+        configureNarayanaProperties(this.environment);
         return com.arjuna.ats.jta.TransactionManager.transactionManager();
     }
 
     @Autowired
-    private ConfigurableEnvironment configurableEnvironment;
+    private ConfigurableEnvironment environment;
 
-
+    @Override
+    protected JtaTransactionManager buildJtaTransactionManager() throws Exception {
+        return new JtaTransactionManager(this.jtaTransactionManager());
+    }
 }
