@@ -19,7 +19,7 @@ import java.util.*;
  *
  * Registers the <A href="http://www.atomikos.com/">Atomikos JTA</a> implementation and
  * configures JTA support. Requires that clients register their {@link javax.sql.DataSource}s with
- * {@link com.atomikos.jdbc.nonxa.AtomikosNonXADataSourceBean} and their
+ * {@link com.atomikos.jdbc.AtomikosDataSourceBean} and their
  * JMS {@link javax.jms.ConnectionFactory}s with
  * {@link com.atomikos.jms.AtomikosConnectionFactoryBean}.
  *

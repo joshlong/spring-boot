@@ -1,4 +1,4 @@
-package org.springframework.boot.autoconfigure.jta.narayana;
+package org.springframework.boot.autoconfigure.jta.arjuna;
 
 import com.arjuna.ats.internal.jdbc.DynamicClass;
 import com.arjuna.ats.jdbc.TransactionalDriver;
@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Josh Long
  */
-public class NarayanaXaDataSourceFactoryBean
+public class ArjunaXaDataSourceFactoryBean
         implements BeanNameAware, FactoryBean<DataSource> {
 
     private static Map<String, XADataSource> XA_DATA_SOURCE_MAP = new ConcurrentHashMap<String, XADataSource>();
@@ -79,7 +79,7 @@ public class NarayanaXaDataSourceFactoryBean
         this.beanName = name;
     }
 
-    public NarayanaXaDataSourceFactoryBean(
+    public ArjunaXaDataSourceFactoryBean(
             XADataSource xaDataSource, String username, String password) {
         this.xaDataSource = xaDataSource;
         this.user = username;

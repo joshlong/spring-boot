@@ -1,6 +1,5 @@
 package sample.narayana;
 
-import com.arjuna.ats.jta.TransactionManager;
 import org.apache.activemq.ActiveMQXAConnectionFactory;
 import org.apache.activemq.jms.pool.XaPooledConnectionFactory;
 import org.postgresql.xa.PGXADataSource;
@@ -12,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jta.narayana.NarayanaXaDataSourceFactoryBean;
+import org.springframework.boot.autoconfigure.jta.arjuna.ArjunaXaDataSourceFactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -51,19 +50,17 @@ import java.util.List;
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @ComponentScan
 @EnableAutoConfiguration
-public class SampleNarayanaApplication {
+public class SampleArjunaApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(SampleNarayanaApplication.class, args);
+        SpringApplication.run(
+                SampleArjunaApplication.class, args);
     }
 
-    /**
-     * We can use a third-party JMS driver like ActiveMQ's {@link org.apache.activemq.jms.pool.XaPooledConnectionFactory}
-     * to make a connection-factory participate in JTA transactions.
-     */
     private static XaPooledConnectionFactory xaPooledConnectionFactory(ConnectionFactory connectionFactory) {
         XaPooledConnectionFactory xa = new XaPooledConnectionFactory();
-        xa.setTransactionManager(TransactionManager.transactionManager());
+        xa.setTransactionManager(
+                com.arjuna.ats.jta.TransactionManager.transactionManager());
         xa.setConnectionFactory(connectionFactory);
         return xa;
     }
@@ -84,7 +81,7 @@ public class SampleNarayanaApplication {
     @Bean
     public FactoryBean<DataSource> dataSource() {
         XADataSource xaDataSource = dataSource("127.0.0.1", "crm", "crm", "crm");
-        return new NarayanaXaDataSourceFactoryBean(xaDataSource, "crm", "crm");
+        return new ArjunaXaDataSourceFactoryBean(xaDataSource, "crm", "crm");
     }
 
     @Bean

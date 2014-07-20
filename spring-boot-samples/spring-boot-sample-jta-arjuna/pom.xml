@@ -8,9 +8,9 @@
         <artifactId>spring-boot-samples</artifactId>
         <version>1.1.4.BUILD-SNAPSHOT</version>
     </parent>
-    <artifactId>spring-boot-sample-jta-narayana</artifactId>
-    <name>Spring Boot Narayana JTA Sample</name>
-    <description>Spring Boot Narayana JTA Sample</description>
+    <artifactId>spring-boot-sample-jta-arjuna</artifactId>
+    <name>Spring Boot Arjuna JTA Sample</name>
+    <description>Spring Boot Arjuna JTA Sample</description>
     <url>http://projects.spring.io/spring-boot/</url>
     <organization>
         <name>Pivotal Software, Inc.</name>
@@ -46,7 +46,7 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jta-narayana</artifactId>
+            <artifactId>spring-boot-starter-jta-arjuna</artifactId>
         </dependency>
 
     </dependencies>

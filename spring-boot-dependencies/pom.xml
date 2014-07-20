@@ -161,7 +161,7 @@
                 <version>${atomikos.version}</version>
             </dependency>
 
-            <!-- Narayana JTA -->
+      <!--      &lt;!&ndash; Narayana JTA &ndash;&gt;
 
 
             <dependency>
@@ -183,7 +183,7 @@
                 <groupId>org.jboss.narayana.jta</groupId>
                 <artifactId>narayana-jta</artifactId>
                 <version>${narayana.version}</version>
-            </dependency>
+            </dependency>-->
 
             <!-- Spring Boot -->
             <dependency>

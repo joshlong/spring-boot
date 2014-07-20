@@ -35,11 +35,8 @@ public class JtaAutoConfigurationTests {
     }
 
     @Test
-    public void testNarayanaAutoConfiguration() throws Exception {
-        AnnotationConfigApplicationContext ac = testContextFor(
-                NarayanaAutoConfiguration.class,
-                TransactionManagerImple.class);
-
+    public void testArjunaAutoConfiguration() throws Exception {
+        testContextFor(ArjunaAutoConfiguration.class, TransactionManagerImple.class);
     }
 
     private AnnotationConfigApplicationContext buildApplicationContextFrom(Class<?>... classes) {

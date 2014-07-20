@@ -16,7 +16,7 @@ import java.util.Map;
  * Registers the <A href="http://docs.jboss.org/jbosstm/">Narayana JTA</a> implementation and
  * configures JTA support. Clients may register their {@link javax.sql.DataSource}s
  * with the {@link com.arjuna.ats.jdbc.TransactionalDriver}-wrapping
- * {@link org.springframework.boot.autoconfigure.jta.narayana.NarayanaXaDataSourceFactoryBean}
+ * {@link org.springframework.boot.autoconfigure.jta.arjuna.NarayanaXaDataSourceFactoryBean}
  * and their JMS {@link javax.jms.ConnectionFactory}s with a JTA-aware {@link javax.jms.ConnectionFactory}
  * proxy, like <a href="http://activemq.apache.org/maven/apidocs/org/apache/activemq/pool/XaPooledConnectionFactory.html">
  * the ActiveMQ project's <code>XaPooledConnectionFactory</code></a>
@@ -24,7 +24,7 @@ import java.util.Map;
  * @author Josh Long
  */
 @Configuration
-class NarayanaAutoConfiguration extends AbstractJtaAutoConfiguration {
+class ArjunaAutoConfiguration extends AbstractJtaAutoConfiguration {
 
     private String narayanaProperty = "spring.jta.narayana";
 
