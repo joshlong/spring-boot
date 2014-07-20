@@ -40,12 +40,11 @@ public class JtaAutoConfigurationTests {
     }
 
     private AnnotationConfigApplicationContext buildApplicationContextFrom(Class<?>... classes) {
-        AnnotationConfigApplicationContext annotationConfigApplicationContext
-                = new AnnotationConfigApplicationContext();
-        annotationConfigApplicationContext.register(classes);
-        annotationConfigApplicationContext.refresh();
-        this.applicationContext = annotationConfigApplicationContext;
-        return annotationConfigApplicationContext;
+        AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext();
+        ac.register(classes);
+        ac.refresh();
+        this.applicationContext = ac;
+        return ac;
     }
 
     private AnnotationConfigApplicationContext testContextFor(Class<?> classOfAutoConfiguration, Class<?> classOfTransactionManagerImpl) {
