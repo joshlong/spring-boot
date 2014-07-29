@@ -7,8 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +20,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.jta.JtaTransactionManager;
@@ -53,13 +52,7 @@ import java.util.List;
 @Configuration
 @ComponentScan
 @EnableAutoConfiguration
-public class SampleTraditionalApplicationServerApplication
-        extends SpringBootServletInitializer {
-
-    @Override
-    protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
-        return application.sources(SampleTraditionalApplicationServerApplication.class);
-    }
+public class SampleTraditionalApplicationServerApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(SampleTraditionalApplicationServerApplication.class, args);
@@ -214,7 +207,15 @@ class AccountRestController {
 
     @RequestMapping("/accounts")
     Collection<Account> accountCollection() {
-        return this.accountService.readAccounts();
+        Collection<Account> accounts = this.accountService.readAccounts();
+        return accounts;
+    }
+
+    private TransactionTemplate transactionTemplate;
+
+    @Autowired
+    public void setPlatformTransactionManager(PlatformTransactionManager txManager) {
+        this.transactionTemplate = new TransactionTemplate(txManager);
     }
 
     @Autowired

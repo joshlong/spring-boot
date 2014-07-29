@@ -76,6 +76,7 @@ abstract class AbstractJtaAutoConfiguration {
     @ConditionalOnMissingBean(name = TRANSACTION_MANAGER_NAME,
             value = PlatformTransactionManager.class)
     @ConditionalOnBean(SpringJtaPlatform.class)
+    @ConditionalOnClass(JtaPlatform.class)
     @Bean(name = TRANSACTION_MANAGER_NAME)
     public JtaTransactionManager transactionManagerBean(SpringJtaPlatform jtaPlatform) throws Exception {
 

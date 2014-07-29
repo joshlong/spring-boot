@@ -16,17 +16,16 @@
 
 package org.springframework.boot.autoconfigure.orm.jpa;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import javax.sql.DataSource;
-
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.persistenceunit.PersistenceUnitManager;
 import org.springframework.util.ClassUtils;
+
+import javax.sql.DataSource;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Convenient builder for JPA EntityManagerFactory instances. Collects common
@@ -41,139 +40,164 @@ import org.springframework.util.ClassUtils;
  */
 public class EntityManagerFactoryBuilder {
 
-	private JpaVendorAdapter jpaVendorAdapter;
+    private JpaVendorAdapter jpaVendorAdapter;
 
-	private PersistenceUnitManager persistenceUnitManager;
+    private PersistenceUnitManager persistenceUnitManager;
 
-	private JpaProperties properties;
+    private JpaProperties properties;
 
-	private EntityManagerFactoryBeanCallback callback;
+    private EntityManagerFactoryBeanCallback callback;
 
-	/**
-	 * Create a new instance passing in the common pieces that will be shared if multiple
-	 * EntityManagerFactory instances are created.
-	 * @param jpaVendorAdapter a vendor adapter
-	 * @param properties common configuration options, including generic map for JPA
-	 * vendor properties
-	 * @param persistenceUnitManager optional source of persistence unit information (can
-	 * be null)
-	 */
-	public EntityManagerFactoryBuilder(JpaVendorAdapter jpaVendorAdapter,
-			JpaProperties properties, PersistenceUnitManager persistenceUnitManager) {
-		this.jpaVendorAdapter = jpaVendorAdapter;
-		this.persistenceUnitManager = persistenceUnitManager;
-		this.properties = properties;
-	}
+    /**
+     * Create a new instance passing in the common pieces that will be shared if multiple
+     * EntityManagerFactory instances are created.
+     *
+     * @param jpaVendorAdapter       a vendor adapter
+     * @param properties             common configuration options, including generic map for JPA
+     *                               vendor properties
+     * @param persistenceUnitManager optional source of persistence unit information (can
+     *                               be null)
+     */
+    public EntityManagerFactoryBuilder(JpaVendorAdapter jpaVendorAdapter,
+                                       JpaProperties properties, PersistenceUnitManager persistenceUnitManager) {
+        this.jpaVendorAdapter = jpaVendorAdapter;
+        this.persistenceUnitManager = persistenceUnitManager;
+        this.properties = properties;
+    }
 
-	public Builder dataSource(DataSource dataSource) {
-		return new Builder(dataSource);
-	}
+    public Builder xaDataSource(DataSource dataSource) {
+        return new Builder().xaDataSource(dataSource);
+    }
 
-	/**
-	 * An optional callback for new entity manager factory beans.
-	 */
-	public void setCallback(EntityManagerFactoryBeanCallback callback) {
-		this.callback = callback;
-	}
+    public Builder dataSource(DataSource dataSource) {
+        return new Builder().dataSource(dataSource);
+    }
 
-	/**
-	 * A fluent builder for a LocalContainerEntityManagerFactoryBean.
-	 */
-	public class Builder {
+    /**
+     * An optional callback for new entity manager factory beans.
+     */
+    public void setCallback(EntityManagerFactoryBeanCallback callback) {
+        this.callback = callback;
+    }
 
-		private DataSource dataSource;
+    /**
+     * A fluent builder for a LocalContainerEntityManagerFactoryBean.
+     */
+    public class Builder {
 
-		private String[] packagesToScan;
+        private DataSource dataSource;
 
-		private String persistenceUnit;
+        private String[] packagesToScan;
 
-		private Map<String, Object> properties = new HashMap<String, Object>();
+        private String persistenceUnit;
 
-		private Builder(DataSource dataSource) {
-			this.dataSource = dataSource;
-		}
+        private Map<String, Object> properties = new HashMap<String, Object>();
 
-		/**
-		 * The names of packages to scan for <code>@Entity</code> annotations.
-		 * @param packagesToScan packages to scan
-		 * @return the builder for fluent usage
-		 */
-		public Builder packages(String... packagesToScan) {
-			this.packagesToScan = packagesToScan;
-			return this;
-		}
+        private Builder(DataSource dataSource) {
+            this.dataSource = dataSource;
+        }
 
-		/**
-		 * The classes whose packages should be scanned for <code>@Entity</code>
-		 * annotations.
-		 * @param basePackageClasses the classes to use
-		 * @return the builder for fluent usage
-		 */
-		public Builder packages(Class<?>... basePackageClasses) {
-			Set<String> packages = new HashSet<String>();
-			for (Class<?> type : basePackageClasses) {
-				packages.add(ClassUtils.getPackageName(type));
-			}
-			this.packagesToScan = packages.toArray(new String[0]);
-			return this;
-		}
+        private Builder() {
+        }
 
-		/**
-		 * The name of the persistence unit. If only building one EntityManagerFactory you
-		 * can omit this, but if there are more than one in the same application you
-		 * should give them distinct names.
-		 * @param persistenceUnit the name of the persistence unit
-		 * @return the builder for fluent usage
-		 */
-		public Builder persistenceUnit(String persistenceUnit) {
-			this.persistenceUnit = persistenceUnit;
-			return this;
-		}
+        public Builder xaDataSource(DataSource dataSource) {
+            this.dataSource = dataSource;
+            return this;
+        }
 
-		/**
-		 * Generic properties for standard JPA or vendor-specific configuration. These
-		 * properties override any values provided in the {@link JpaProperties} used to
-		 * create the builder.
-		 * @param properties the properties to use
-		 * @return the builder for fluent usage
-		 */
-		public Builder properties(Map<String, String> properties) {
-			this.properties.putAll(properties);
-			return this;
-		}
+        public Builder dataSource(DataSource dataSource) {
+            this.dataSource = dataSource;
+            return this;
+        }
 
-		public LocalContainerEntityManagerFactoryBean build() {
-			LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
-			if (EntityManagerFactoryBuilder.this.persistenceUnitManager != null) {
-				entityManagerFactoryBean
-						.setPersistenceUnitManager(EntityManagerFactoryBuilder.this.persistenceUnitManager);
-			}
-			if (this.persistenceUnit != null) {
-				entityManagerFactoryBean.setPersistenceUnitName(this.persistenceUnit);
-			}
-			entityManagerFactoryBean
-					.setJpaVendorAdapter(EntityManagerFactoryBuilder.this.jpaVendorAdapter);
-			entityManagerFactoryBean.setDataSource(this.dataSource);
-			entityManagerFactoryBean.setPackagesToScan(this.packagesToScan);
-			entityManagerFactoryBean.getJpaPropertyMap().putAll(
-					EntityManagerFactoryBuilder.this.properties.getProperties());
-			entityManagerFactoryBean.getJpaPropertyMap().putAll(this.properties);
-			if (EntityManagerFactoryBuilder.this.callback != null) {
-				EntityManagerFactoryBuilder.this.callback
-						.execute(entityManagerFactoryBean);
-			}
-			return entityManagerFactoryBean;
-		}
+        /**
+         * The names of packages to scan for <code>@Entity</code> annotations.
+         *
+         * @param packagesToScan packages to scan
+         * @return the builder for fluent usage
+         */
+        public Builder packages(String... packagesToScan) {
+            this.packagesToScan = packagesToScan;
+            return this;
+        }
 
-	}
+        /**
+         * The classes whose packages should be scanned for <code>@Entity</code>
+         * annotations.
+         *
+         * @param basePackageClasses the classes to use
+         * @return the builder for fluent usage
+         */
+        public Builder packages(Class<?>... basePackageClasses) {
+            Set<String> packages = new HashSet<String>();
+            for (Class<?> type : basePackageClasses) {
+                packages.add(ClassUtils.getPackageName(type));
+            }
+            this.packagesToScan = packages.toArray(new String[0]);
+            return this;
+        }
 
-	/**
-	 * A callback for new entity manager factory beans created by a Builder.
-	 */
-	public static interface EntityManagerFactoryBeanCallback {
+        /**
+         * The name of the persistence unit. If only building one EntityManagerFactory you
+         * can omit this, but if there are more than one in the same application you
+         * should give them distinct names.
+         *
+         * @param persistenceUnit the name of the persistence unit
+         * @return the builder for fluent usage
+         */
+        public Builder persistenceUnit(String persistenceUnit) {
+            this.persistenceUnit = persistenceUnit;
+            return this;
+        }
 
-		void execute(LocalContainerEntityManagerFactoryBean factory);
+        /**
+         * Generic properties for standard JPA or vendor-specific configuration. These
+         * properties override any values provided in the {@link JpaProperties} used to
+         * create the builder.
+         *
+         * @param properties the properties to use
+         * @return the builder for fluent usage
+         */
+        public Builder properties(Map<String, String> properties) {
+            this.properties.putAll(properties);
+            return this;
+        }
 
-	}
+        public LocalContainerEntityManagerFactoryBean build() {
+            LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
+            if (EntityManagerFactoryBuilder.this.persistenceUnitManager != null) {
+                entityManagerFactoryBean
+                        .setPersistenceUnitManager(EntityManagerFactoryBuilder.this.persistenceUnitManager);
+            }
+            if (this.persistenceUnit != null) {
+                entityManagerFactoryBean.setPersistenceUnitName(this.persistenceUnit);
+            }
+            entityManagerFactoryBean
+                    .setJpaVendorAdapter(EntityManagerFactoryBuilder.this.jpaVendorAdapter);
+
+            //entityManagerFactoryBean.setDataSource(this.dataSource);
+
+            entityManagerFactoryBean.setJtaDataSource(this.dataSource);
+            entityManagerFactoryBean.setPackagesToScan(this.packagesToScan);
+            entityManagerFactoryBean.getJpaPropertyMap().putAll(
+                    EntityManagerFactoryBuilder.this.properties.getProperties());
+            entityManagerFactoryBean.getJpaPropertyMap().putAll(this.properties);
+            if (EntityManagerFactoryBuilder.this.callback != null) {
+                EntityManagerFactoryBuilder.this.callback
+                        .execute(entityManagerFactoryBean);
+            }
+            return entityManagerFactoryBean;
+        }
+
+    }
+
+    /**
+     * A callback for new entity manager factory beans created by a Builder.
+     */
+    public static interface EntityManagerFactoryBeanCallback {
+
+        void execute(LocalContainerEntityManagerFactoryBean factory);
+
+    }
 
 }

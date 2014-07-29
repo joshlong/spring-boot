@@ -86,7 +86,7 @@ public abstract class JpaBaseConfiguration implements BeanFactoryAware {
         return adapter;
     }
 
-    @Bean
+/*    @Bean
     @ConditionalOnMissingBean
     @ConditionalOnBean( JtaTransactionManager.class)
     public EntityManagerFactoryBuilder entityManagerFactoryBuilder(
@@ -96,17 +96,18 @@ public abstract class JpaBaseConfiguration implements BeanFactoryAware {
                 jpaVendorAdapter, this.jpaProperties, this.persistenceUnitManager);
         builder.setCallback(getVendorCallback());
         return builder;
-    }
+    }*/
 
 
     @Bean
+    @ConditionalOnBean( JtaTransactionManager.class)
     @ConditionalOnMissingBean
-    public EntityManagerFactoryBuilder entityManagerFactoryBuilder(
-            JpaVendorAdapter jpaVendorAdapter) {
-        EntityManagerFactoryBuilder builder = new EntityManagerFactoryBuilder(
-                jpaVendorAdapter, this.jpaProperties, this.persistenceUnitManager);
-        builder.setCallback(getVendorCallback());
-        return builder;
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(
+            JtaTransactionManager jtaTransactionManager,
+            EntityManagerFactoryBuilder factory) {
+
+        return factory.xaDataSource( this.dataSource).packages(getPackagesToScan())
+                .properties(getVendorProperties()).build();
     }
 
     @Bean
@@ -116,6 +117,16 @@ public abstract class JpaBaseConfiguration implements BeanFactoryAware {
             EntityManagerFactoryBuilder factory) {
         return factory.dataSource(this.dataSource).packages(getPackagesToScan())
                 .properties(getVendorProperties()).build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public EntityManagerFactoryBuilder entityManagerFactoryBuilder(
+            JpaVendorAdapter jpaVendorAdapter) {
+        EntityManagerFactoryBuilder builder = new EntityManagerFactoryBuilder(
+                jpaVendorAdapter, this.jpaProperties, this.persistenceUnitManager);
+        builder.setCallback(getVendorCallback());
+        return builder;
     }
 
     protected abstract AbstractJpaVendorAdapter createJpaVendorAdapter();
