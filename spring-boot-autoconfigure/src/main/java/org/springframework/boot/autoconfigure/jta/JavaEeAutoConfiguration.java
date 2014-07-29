@@ -23,8 +23,8 @@ import org.springframework.transaction.jta.JtaTransactionManager;
 @Configuration
 @Conditional(JtaCondition.class)
 @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
-//@AutoConfigureAfter({ArjunaAutoConfiguration.class, BitronixAutoConfiguration.class, AtomikosAutoConfiguration.class})
-public class JndiAutoConfiguration extends AbstractJtaAutoConfiguration {
+ @AutoConfigureAfter({ ArjunaAutoConfiguration.class, BitronixAutoConfiguration.class, AtomikosAutoConfiguration.class})
+public class JavaEeAutoConfiguration extends AbstractJtaAutoConfiguration {
 
     @Override
     protected JtaTransactionManager buildJtaTransactionManager() throws Exception {

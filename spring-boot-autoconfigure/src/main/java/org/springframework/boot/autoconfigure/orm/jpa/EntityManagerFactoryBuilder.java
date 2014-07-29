@@ -100,8 +100,11 @@ public class EntityManagerFactoryBuilder {
         private Builder() {
         }
 
+        private boolean xa;
+
         public Builder xaDataSource(DataSource dataSource) {
             this.dataSource = dataSource;
+            this.xa = true;
             return this;
         }
 
@@ -175,9 +178,11 @@ public class EntityManagerFactoryBuilder {
             entityManagerFactoryBean
                     .setJpaVendorAdapter(EntityManagerFactoryBuilder.this.jpaVendorAdapter);
 
-            //entityManagerFactoryBean.setDataSource(this.dataSource);
+            if (!this.xa)
+                entityManagerFactoryBean.setDataSource(this.dataSource);
+            else
+                entityManagerFactoryBean.setJtaDataSource(this.dataSource);
 
-            entityManagerFactoryBean.setJtaDataSource(this.dataSource);
             entityManagerFactoryBean.setPackagesToScan(this.packagesToScan);
             entityManagerFactoryBean.getJpaPropertyMap().putAll(
                     EntityManagerFactoryBuilder.this.properties.getProperties());

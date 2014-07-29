@@ -98,7 +98,10 @@ public abstract class JpaBaseConfiguration implements BeanFactoryAware {
         return builder;
     }*/
 
-
+    /**
+     * Makes JPA aware of the JTA machinery around it if so required. In particular, this
+     * will be auto-configured in persistence.xml as a {@code jta-datasource}.
+     */
     @Bean
     @ConditionalOnBean( JtaTransactionManager.class)
     @ConditionalOnMissingBean
@@ -110,8 +113,10 @@ public abstract class JpaBaseConfiguration implements BeanFactoryAware {
                 .properties(getVendorProperties()).build();
     }
 
+    /**
+     * Registers JPA as per normal, assuming the JTA-aware registration didn't kick in.
+     */
     @Bean
-    @Primary
     @ConditionalOnMissingBean
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(
             EntityManagerFactoryBuilder factory) {

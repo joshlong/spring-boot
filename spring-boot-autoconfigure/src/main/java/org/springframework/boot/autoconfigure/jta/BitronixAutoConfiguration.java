@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.jta.JtaTransactionManager;
@@ -24,7 +25,7 @@ import java.io.File;
  *
  * @author Josh Long
  */
-//@Configuration
+@Configuration
 @ConditionalOnClass(bitronix.tm.jndi.BitronixContext.class)
 @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
 public class BitronixAutoConfiguration extends AbstractJtaAutoConfiguration {

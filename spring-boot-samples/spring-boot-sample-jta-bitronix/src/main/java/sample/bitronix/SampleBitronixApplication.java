@@ -19,12 +19,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCreator;
-import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionStatus;
@@ -32,14 +26,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.jta.JtaTransactionManager;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -48,8 +41,7 @@ import java.util.List;
  *
  * @author Josh Long
  */
-@EnableAspectJAutoProxy(proxyTargetClass = true)
-@Configuration
+ @Configuration
 @ComponentScan
 @EnableAutoConfiguration
 public class SampleBitronixApplication {
@@ -84,14 +76,10 @@ public class SampleBitronixApplication {
     }
 
     @Bean
-    public CommandLineRunner jpa(final JpaAccountService accountService) {
+    public CommandLineRunner jpa(AccountService accountService) {
         return new AccountServiceCommandLineRunner(accountService);
     }
 
-    @Bean
-    public CommandLineRunner jdbc(final JdbcAccountService accountService) {
-        return new AccountServiceCommandLineRunner(accountService);
-    }
 
 }
 
@@ -199,61 +187,18 @@ class JpaAccountService implements AccountService {
     }
 }
 
-@Service
-class JdbcAccountService implements AccountService {
 
-    private final JdbcTemplate jdbcTemplate;
+@RestController
+class AccountRestController {
 
-    private final JmsTemplate jmsTemplate;
-
-    private final RowMapper<Account> accountRowMapper = new RowMapper<Account>() {
-        @Override
-        public Account mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new Account(rs.getLong("id"), rs.getString("username"));
-        }
-    };
+    @RequestMapping("/accounts")
+    Collection<Account> accountCollection() {
+        return this.accountService.readAccounts();
+    }
 
     @Autowired
-    public JdbcAccountService(JmsTemplate jmsTemplate, JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.jmsTemplate = jmsTemplate;
-    }
-
-    @Transactional
-    public void deleteAllAccounts() {
-        this.jdbcTemplate.update("delete from account");
-    }
-
-    @Transactional(readOnly = true)
-    public List<Account> readAccounts() {
-        return jdbcTemplate.query("select * from account", this.accountRowMapper);
-    }
-
-    @Transactional(readOnly = true)
-    public Account readAccount(long id) {
-        return this.jdbcTemplate.queryForObject("select * from account where id = ?", this.accountRowMapper, (Object) id);
-    }
-
-    @Transactional
-    public Account createAccountAndNotify(String u) {
-        Account account = this.createAccount(u);
-        this.jmsTemplate.convertAndSend("accounts", account.toString());
-        return account;
-    }
-
-    @Transactional
-    public Account createAccount(String username) {
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        PreparedStatementCreatorFactory stmtFactory = new PreparedStatementCreatorFactory(
-                "insert into account(id, username) values (nextval('hibernate_sequence'), ?)", new int[]{Types.VARCHAR});
-        stmtFactory.setGeneratedKeysColumnNames(new String[]{"id"});
-        PreparedStatementCreator psc = stmtFactory.newPreparedStatementCreator(Arrays.asList(username));
-        jdbcTemplate.update(psc, keyHolder);
-        Number newAccountId = keyHolder.getKey();
-        return this.readAccount(newAccountId.longValue());
-    }
+    private AccountService accountService;
 }
-
 
 @Entity
 class Account {
