@@ -137,7 +137,6 @@ class AccountServiceCommandLineRunner implements CommandLineRunner, BeanNameAwar
     }
 }
 
-
 interface AccountRepository extends JpaRepository<Account, Long> {
 }
 
@@ -198,13 +197,13 @@ class JpaAccountService implements AccountService {
 @RestController
 class AccountRestController {
 
+    @Autowired
+    private AccountService accountService;
+
     @RequestMapping("/accounts")
     Collection<Account> accountCollection() {
         return this.accountService.readAccounts();
     }
-
-    @Autowired
-    private AccountService accountService;
 }
 
 @Entity
