@@ -221,7 +221,7 @@ class AccountRestController {
     private AccountService accountService;
 }
 
- 
+
 class JdbcAccountService implements AccountService {
 
     private final JdbcTemplate jdbcTemplate;

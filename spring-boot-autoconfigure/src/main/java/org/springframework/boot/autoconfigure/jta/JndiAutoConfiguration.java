@@ -31,6 +31,7 @@ public class JndiAutoConfiguration extends AbstractJtaAutoConfiguration {
         JtaTransactionManager txManager = new JtaTransactionManager();
         txManager.setAutodetectTransactionManager(true);
         txManager.setAllowCustomIsolationLevels(true);
+
         return txManager;
     }
 }
