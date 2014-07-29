@@ -19,6 +19,7 @@ import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.jms.ConnectionFactory;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
@@ -60,38 +62,11 @@ public class SampleTraditionalApplicationServerApplication
     }
 
     /**
-     * There's a fair amount involved in setting up a JNDI-bound datasource. Since Java EE 6 there has been a
-     * very inflexible, but standard, approach. Here, I am using the non-standard approach since it seems
-     * to work better in my tests. This is, of course, only my ignorance at play. I wouldn't recommend
-     * *either* approach!
-     * <p>
-     * To get this working in Wildfly 8.1, I ended up contributing a PostgreSQL driver as a "module"
-     * as explained in a helpful Planet JBoss blog post that I found after a few hours of
-     * searching for JBoss, JNDI, and DataSource related posts. Below is the session I went through using  <code> jboss-cli.sh</code>.
-     * <p>
-     * <pre><code>
-     *  [standalone@localhost:9990 /] module add --name=org.postgres --resources=~/.m2/repository/org/postgresql/postgresql/9.3-1101-jdbc41/postgresql-9.3-1101-jdbc41.jar --dependencies=javax.api,javax.transaction.api
-     *  [standalone@localhost:9990 /] /subsystem=datasources/jdbc-driver=postgres:add(driver-name="postgres",driver-module-name="org.postgres",driver-class-name=org.postgresql.Driver)
-     *  [standalone@localhost:9990 /] data-source add --name=crmDS --connection-url=jdbc:postgresql://localhost/crm --driver-name=postgres --user-name=crm --password=crm --jndi-name=java:/crmDS
-     *  [standalone@localhost:9990 /] data-source test-connection-in-pool --name=crmDS
-     * </code></pre>
-     * <p>
-     * You can see this configuration reflected in {@code $JBOSS_HOME/standalone/configuration/standalone.xml}:
-     * <p>
-     * <PRE>
-     * <CODE>
-     * <p>
-     * &lt;datasource jndi-name="java:/crmDS" pool-name="crmDS" enabled="true"&gt;
-     * &lt;connection-url&gt;jdbc:postgresql://localhost/crm&lt;/connection-url&gt;
-     * &lt;driver&gt;postgres&lt;/driver&gt;
-     * &lt;security>
-     * &lt;user-name&gt;crm&lt;/user-name&gt;
-     * &lt;password&gt;crm&lt;/password&gt;
-     * &lt;/security&gt;
-     * &lt;/datasource&gt;
-     * <p>
-     * </CODE>
-     * </PRE>
+     * So, the idea behind JNDI is that a server can maintain shared resources like a connection pool and then
+     * expose those through a `javax.jms.ConnectionFactory` or a `javax.sql.DataSource` handle that's
+     * resolved using a JNDI name, like `java:jboss/datasources/CrmXADS`. This means that configuration lives
+     * with the application server, independant of the application. See {@code README.md} file for Wildfly-specific configuration
+     * to configure JNDI for a PostgreSQL XA DataSource and a HornetQ JMS message broker.
      *
      * @see <a href="http://planet.jboss.org/post/how_to_create_and_manage_datasources_in_as7">a fairly good
      * introduction for how to configure an XA {@link javax.sql.DataSource} using the <code>jboss-cli.sh</code> tool in the AS' <code>bin</code> directory.</a>
@@ -99,10 +74,20 @@ public class SampleTraditionalApplicationServerApplication
      * https://docs.jboss.org/author/display/WFLY8/JNDI+Reference</a>
      */
     @Bean
-    DataSource dataSource() throws NamingException {
+    public DataSource dataSource() throws NamingException {
         return InitialContext.doLookup("java:jboss/datasources/CrmXADS");
     }
 
+    /**
+     * We can use the default configured JMS connection factory pointing to HornetQ, but
+     * make sure to configure the required {@link javax.jms.Destination destination}
+     * instances. See {@code README.md} file for Wildfly-specific configuration to configure
+     * JNDI for a HornetQ XA DataSource and a PostgresSQL XA DataSource.
+     */
+    @Bean
+    public ConnectionFactory connectionFactory() throws NamingException {
+        return InitialContext.doLookup("java:/JmsXA");
+    }
 
     @Bean
     public CommandLineRunner jdbc(final JdbcAccountService accountService) {
@@ -188,7 +173,7 @@ class JdbcAccountService implements AccountService {
 
     private final JdbcTemplate jdbcTemplate;
 
-    //   private final JmsTemplate jmsTemplate;
+    private final JmsTemplate jmsTemplate;
 
     private final RowMapper<Account> accountRowMapper = new RowMapper<Account>() {
         @Override
@@ -198,10 +183,10 @@ class JdbcAccountService implements AccountService {
     };
 
     @Autowired
-    public JdbcAccountService(//JmsTemplate jmsTemplate,
+    public JdbcAccountService(JmsTemplate jmsTemplate,
                               JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        //  this.jmsTemplate = jmsTemplate;
+        this.jmsTemplate = jmsTemplate;
     }
 
     @Transactional
@@ -222,7 +207,7 @@ class JdbcAccountService implements AccountService {
     @Transactional
     public Account createAccountAndNotify(String u) {
         Account account = this.createAccount(u);
-        //   this.jmsTemplate.convertAndSend("accounts", account.toString());
+        this.jmsTemplate.convertAndSend("accounts", account.toString());
         return account;
     }
 
