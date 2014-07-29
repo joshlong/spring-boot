@@ -41,6 +41,7 @@
         <module>spring-boot-sample-jta-atomikos</module>
         <module>spring-boot-sample-jta-arjuna</module>
         <module>spring-boot-sample-jta-bitronix</module>		
+        <module>spring-boot-sample-jta-traditional-as</module>				
         <module>spring-boot-sample-liquibase</module>
 		<module>spring-boot-sample-parent-context</module>
 		<module>spring-boot-sample-profile</module>

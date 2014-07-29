@@ -43,7 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Demonstrates how to use Atomikos and JTA together to coordinate a transaction database connection (to PostgreSQL)
+ * Demonstrates how to use Bitronix and JTA together to coordinate a transaction database connection (to PostgreSQL)
  * and a transactional Message Queue connection (to ActiveMQ, in this case)
  *
  * @author Josh Long
@@ -60,7 +60,9 @@ public class SampleBitronixApplication {
 
     @Bean
     public FactoryBean<PoolingConnectionFactory> connectionFactory() {
-        return new BitronixXaConnectionFactoryFactoryBean<ActiveMQXAConnectionFactory>(ActiveMQXAConnectionFactory.class) {
+
+        return new BitronixXaConnectionFactoryFactoryBean<ActiveMQXAConnectionFactory>(
+                ActiveMQXAConnectionFactory.class) {
             @Override
             protected void configureXaResource(ActiveMQXAConnectionFactory xa) {
                 xa.setBrokerURL("tcp://localhost:61616");

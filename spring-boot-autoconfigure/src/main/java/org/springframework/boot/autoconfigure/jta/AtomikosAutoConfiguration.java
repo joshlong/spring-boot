@@ -3,12 +3,12 @@ package org.springframework.boot.autoconfigure.jta;
 import com.atomikos.icatch.config.UserTransactionService;
 import com.atomikos.icatch.config.UserTransactionServiceImp;
 import com.atomikos.icatch.jta.UserTransactionManager;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.*;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 import javax.transaction.SystemException;
@@ -16,7 +16,6 @@ import javax.transaction.TransactionManager;
 import java.util.*;
 
 /**
- *
  * Registers the <A href="http://www.atomikos.com/">Atomikos JTA</a> implementation and
  * configures JTA support. Requires that clients register their {@link javax.sql.DataSource}s with
  * {@link com.atomikos.jdbc.AtomikosDataSourceBean} and their
@@ -25,10 +24,13 @@ import java.util.*;
  *
  * @author Josh Long
  */
-@Configuration
-class AtomikosAutoConfiguration extends AbstractJtaAutoConfiguration {
+ @Configuration
+@Conditional(JtaCondition.class)
+@ConditionalOnClass( name = { "com.atomikos.jdbc.AtomikosDataSourceBean","com.atomikos.icatch.jta.UserTransactionManager" })
+@ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
+public class AtomikosAutoConfiguration extends AbstractJtaAutoConfiguration {
 
-    public  static final String USER_TRANSACTION_SERVICE = "atomikosUserTransactionService";
+    public static final String USER_TRANSACTION_SERVICE = "atomikosUserTransactionService";
 
 
     @ConditionalOnMissingBean
@@ -37,7 +39,7 @@ class AtomikosAutoConfiguration extends AbstractJtaAutoConfiguration {
 
         // setup root data directory
         String atomikos = "atomikos";
-        String path = JtaAutoConfiguration.jtaRootPathFor(e, atomikos);
+        String path =  this.jtaRootPathFor(e, atomikos);
 
         String logBaseDirProperty = "com.atomikos.icatch.log_base_dir";
         String outputDirProperty = "com.atomikos.icatch.output_dir";

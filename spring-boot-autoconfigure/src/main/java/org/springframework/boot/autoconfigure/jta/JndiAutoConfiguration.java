@@ -1,7 +1,13 @@
 package org.springframework.boot.autoconfigure.jta;
 
 
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 /**
@@ -15,7 +21,10 @@ import org.springframework.transaction.jta.JtaTransactionManager;
  * @author Josh Long
  */
 @Configuration
-class JndiAutoConfiguration extends AbstractJtaAutoConfiguration {
+@Conditional(JtaCondition.class)
+@ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
+//@AutoConfigureAfter({ArjunaAutoConfiguration.class, BitronixAutoConfiguration.class, AtomikosAutoConfiguration.class})
+public class JndiAutoConfiguration extends AbstractJtaAutoConfiguration {
 
     @Override
     protected JtaTransactionManager buildJtaTransactionManager() throws Exception {

@@ -24,7 +24,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.jms.activemq.ActiveMQAutoConfiguration;
 import org.springframework.boot.autoconfigure.jms.hornetq.HornetQAutoConfiguration;
-import org.springframework.boot.autoconfigure.jta.JtaAutoConfiguration;
+import org.springframework.boot.autoconfigure.jta.ArjunaAutoConfiguration;
+import org.springframework.boot.autoconfigure.jta.AtomikosAutoConfiguration;
+import org.springframework.boot.autoconfigure.jta.BitronixAutoConfiguration;
+import org.springframework.boot.autoconfigure.jta.JndiAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,7 +46,8 @@ import javax.jms.ConnectionFactory;
 @ConditionalOnClass(JmsTemplate.class)
 @ConditionalOnBean(ConnectionFactory.class)
 @EnableConfigurationProperties(JmsProperties.class)
-@AutoConfigureAfter({JtaAutoConfiguration.class, HornetQAutoConfiguration.class, ActiveMQAutoConfiguration.class})
+@AutoConfigureAfter({JndiAutoConfiguration.class,/* ArjunaAutoConfiguration.class, BitronixAutoConfiguration.class, AtomikosAutoConfiguration.class,*/
+        HornetQAutoConfiguration.class, ActiveMQAutoConfiguration.class})
 public class JmsAutoConfiguration {
 
     @Autowired

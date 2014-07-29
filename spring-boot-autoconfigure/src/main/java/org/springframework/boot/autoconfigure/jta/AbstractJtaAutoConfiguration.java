@@ -1,6 +1,7 @@
 package org.springframework.boot.autoconfigure.jta;
 
 
+import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -10,8 +11,11 @@ import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.jta.JtaTransactionManager;
+
+import java.io.File;
 
 /**
  * Handles concerns common to all the JTA implementations, including registering the {@link org.springframework.transaction.jta.JtaTransactionManager},
@@ -60,6 +64,10 @@ abstract class AbstractJtaAutoConfiguration {
         return jtaTransactionManager;
     }
 
+    public   String jtaRootPathFor(ConfigurableEnvironment e, String jtaDistribution) {
+        return e.getProperty("spring.jta." + jtaDistribution + ".rootPath",
+                new File(System.getProperty("user.home"), "jta/" + jtaDistribution + "Data").getAbsolutePath());
+    }
 
     /**
      * registers Spring's {@link org.springframework.transaction.jta.JtaTransactionManager}
@@ -74,7 +82,7 @@ abstract class AbstractJtaAutoConfiguration {
         JtaTransactionManager jtaTransactionManager = buildJtaTransactionManager();
 
         // make this available for JPA integration with JTA, if required.
-        jtaPlatform.JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
+        SpringJtaPlatform.JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
 
         this.configureJtaTransactionManager(jtaTransactionManager);
         this.configureJmsProperties(jmsProperties);

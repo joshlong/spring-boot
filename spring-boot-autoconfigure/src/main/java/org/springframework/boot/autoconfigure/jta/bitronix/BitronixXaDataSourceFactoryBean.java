@@ -25,6 +25,7 @@ public abstract class BitronixXaDataSourceFactoryBean
         PoolingDataSource ds = new PoolingDataSource();
         Map<String, Object> recordedProperties = new ConcurrentHashMap<String, Object>();
         XA recordingDataSource = getPropertyRecordingProxy(this.getXaDriverClass(), recordedProperties);
+
         this.configureXaResource(recordingDataSource);
 
         ds.setClassName(getXaDriverClass().getName());

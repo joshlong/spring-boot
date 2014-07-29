@@ -29,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.jta.JtaTransactionManager;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -37,6 +39,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -77,7 +80,7 @@ public class SampleAtomikosApplication {
         return xa;
     }
 
-    private javax.jms.XAQueueConnectionFactory connectionFactory(String url) {
+    private javax.jms.XAConnectionFactory connectionFactory(String url) {
         return new ActiveMQXAConnectionFactory(url);
     }
 
@@ -263,6 +266,17 @@ class JdbcAccountService implements AccountService {
     }
 }
 
+@RestController
+class AccountRestController {
+
+    @RequestMapping("/accounts")
+    Collection<Account> accountCollection() {
+        return this.accountService.readAccounts();
+    }
+
+    @Autowired
+    private AccountService accountService;
+}
 
 @Entity
 class Account {

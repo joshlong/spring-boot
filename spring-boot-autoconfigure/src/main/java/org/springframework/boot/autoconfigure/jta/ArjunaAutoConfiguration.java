@@ -1,11 +1,15 @@
 package org.springframework.boot.autoconfigure.jta;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 import javax.transaction.TransactionManager;
@@ -16,7 +20,7 @@ import java.util.Map;
  * Registers the <A href="http://docs.jboss.org/jbosstm/">Narayana JTA</a> implementation and
  * configures JTA support. Clients may register their {@link javax.sql.DataSource}s
  * with the {@link com.arjuna.ats.jdbc.TransactionalDriver}-wrapping
- * {@link org.springframework.boot.autoconfigure.jta.arjuna.NarayanaXaDataSourceFactoryBean}
+ * {@link org.springframework.boot.autoconfigure.jta.arjuna.ArjunaXaDataSourceFactoryBean}
  * and their JMS {@link javax.jms.ConnectionFactory}s with a JTA-aware {@link javax.jms.ConnectionFactory}
  * proxy, like <a href="http://activemq.apache.org/maven/apidocs/org/apache/activemq/pool/XaPooledConnectionFactory.html">
  * the ActiveMQ project's <code>XaPooledConnectionFactory</code></a>
@@ -24,7 +28,10 @@ import java.util.Map;
  * @author Josh Long
  */
 @Configuration
-class ArjunaAutoConfiguration extends AbstractJtaAutoConfiguration {
+@Conditional(JtaCondition.class)
+@ConditionalOnClass(com.arjuna.ats.jta.UserTransaction.class)
+@ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
+public class ArjunaAutoConfiguration extends AbstractJtaAutoConfiguration {
 
     private String narayanaProperty = "spring.jta.narayana";
 
@@ -32,14 +39,13 @@ class ArjunaAutoConfiguration extends AbstractJtaAutoConfiguration {
     private ConfigurableEnvironment environment;
 
     /**
-     *
      * Narayana supports a few well-known properties
      */
     protected void configureNarayanaProperties(ConfigurableEnvironment environment) {
 
         // root file
         String narayana = "narayana";
-        String path = JtaAutoConfiguration.jtaRootPathFor(environment, narayana);
+        String path = this.jtaRootPathFor(environment, narayana);
 
         long timeout = Long.parseLong(environment.getProperty(narayanaProperty + ".timeout", Long.toString(60)));
 
