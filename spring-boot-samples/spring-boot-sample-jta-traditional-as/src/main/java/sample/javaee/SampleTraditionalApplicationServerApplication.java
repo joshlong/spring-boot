@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
@@ -32,6 +33,9 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.jms.ConnectionFactory;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -90,9 +94,13 @@ public class SampleTraditionalApplicationServerApplication
     }
 
     @Bean
-    public CommandLineRunner jdbc(final JdbcAccountService accountService) {
+    public CommandLineRunner jpa(JpaAccountService accountService) {
         return new AccountServiceCommandLineRunner(accountService);
     }
+  /*  @Bean
+    public CommandLineRunner jdbc(@Qualifier("jdbc")   JdbcAccountService accountService) {
+        return new AccountServiceCommandLineRunner(accountService);
+    }*/
 }
 
 class AccountServiceCommandLineRunner implements CommandLineRunner, BeanNameAware {
@@ -143,6 +151,51 @@ class AccountServiceCommandLineRunner implements CommandLineRunner, BeanNameAwar
     }
 }
 
+interface AccountRepository extends JpaRepository<Account, Long> {
+}
+
+@Service
+class JpaAccountService implements AccountService {
+
+    private final JmsTemplate jmsTemplate;
+
+    private final AccountRepository accountRepository;
+
+    @Autowired
+    public JpaAccountService(JmsTemplate jmsTemplate,
+                             AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
+        this.jmsTemplate = jmsTemplate;
+    }
+
+    @Transactional
+    public void deleteAllAccounts() {
+        this.accountRepository.deleteAllInBatch();
+    }
+
+    @Transactional(readOnly = true)
+    public Account readAccount(long id) {
+        return this.accountRepository.findOne(id);
+    }
+
+    @Transactional
+    public Account createAccount(String username) {
+        return this.accountRepository.save(new Account(username));
+    }
+
+    @Override
+    public Account createAccountAndNotify(String username) {
+        Account account = this.createAccount(username);
+        this.jmsTemplate.convertAndSend("accounts", account.toString());
+        return account;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Account> readAccounts() {
+        return this.accountRepository.findAll();
+    }
+}
+
 
 interface AccountService {
     void deleteAllAccounts();
@@ -168,7 +221,7 @@ class AccountRestController {
     private AccountService accountService;
 }
 
-@Service
+ 
 class JdbcAccountService implements AccountService {
 
     private final JdbcTemplate jdbcTemplate;
@@ -224,8 +277,11 @@ class JdbcAccountService implements AccountService {
     }
 }
 
-class Account {
 
+@Entity
+class Account {
+    @Id
+    @GeneratedValue
     Long id;
     String username;
 
