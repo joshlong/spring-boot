@@ -53,6 +53,7 @@ org.springframework.boot.autoconfigure.web.HttpMessageConvertersAutoConfiguratio
 org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration,\
 org.springframework.boot.autoconfigure.web.ErrorMvcAutoConfiguration,\
 org.springframework.boot.autoconfigure.jta.JavaEeAutoConfiguration,\
+org.springframework.boot.autoconfigure.jta.ArjunaAutoConfiguration,\
 org.springframework.boot.autoconfigure.jta.AtomikosAutoConfiguration,\
 org.springframework.boot.autoconfigure.jta.BitronixAutoConfiguration
 

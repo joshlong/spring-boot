@@ -28,7 +28,6 @@ import java.util.*;
 @Conditional(JtaCondition.class)
 @ConditionalOnClass( name = { "com.atomikos.jdbc.AtomikosDataSourceBean","com.atomikos.icatch.jta.UserTransactionManager" })
 @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
-
 public class AtomikosAutoConfiguration extends AbstractJtaAutoConfiguration {
 
     public static final String USER_TRANSACTION_SERVICE = "atomikosUserTransactionService";
