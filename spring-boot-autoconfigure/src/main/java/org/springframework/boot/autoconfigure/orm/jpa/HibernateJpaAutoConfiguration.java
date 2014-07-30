@@ -28,10 +28,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.jta.AtomikosAutoConfiguration;
-import org.springframework.boot.autoconfigure.jta.BitronixAutoConfiguration;
-import org.springframework.boot.autoconfigure.jta.JavaEeAutoConfiguration;
-import org.springframework.boot.autoconfigure.jta.SpringJtaPlatform;
+import org.springframework.boot.autoconfigure.jta.*;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.HibernateEntityManagerCondition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
@@ -53,8 +50,7 @@ import org.springframework.util.ClassUtils;
 @ConditionalOnClass({ LocalContainerEntityManagerFactoryBean.class,
 		EnableTransactionManagement.class, EntityManager.class })
 @Conditional(HibernateEntityManagerCondition.class)
-@AutoConfigureAfter({ JavaEeAutoConfiguration.class, BitronixAutoConfiguration.class,
-		AtomikosAutoConfiguration.class, DataSourceAutoConfiguration.class })
+@AutoConfigureAfter({ ClassicJtaAutoConfiguration.class, ArjunaAutoConfiguration.class,BitronixAutoConfiguration.class, AtomikosAutoConfiguration.class, DataSourceAutoConfiguration.class })
 public class HibernateJpaAutoConfiguration extends JpaBaseConfiguration {
 
 	private static final String JTA_PLATFORM = "hibernate.transaction.jta.platform";
