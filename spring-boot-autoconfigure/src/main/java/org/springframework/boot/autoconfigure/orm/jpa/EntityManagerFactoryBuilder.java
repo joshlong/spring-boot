@@ -89,6 +89,8 @@ public class EntityManagerFactoryBuilder {
 
 		private Map<String, Object> properties = new HashMap<String, Object>();
 
+		private boolean jta;
+
 		private Builder(DataSource dataSource) {
 			this.dataSource = dataSource;
 		}
@@ -142,6 +144,12 @@ public class EntityManagerFactoryBuilder {
 			return this;
 		}
 
+		// FIXME DC
+		public Builder jta(boolean jta) {
+			this.jta = jta;
+			return this;
+		}
+
 		public LocalContainerEntityManagerFactoryBean build() {
 			LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
 			if (EntityManagerFactoryBuilder.this.persistenceUnitManager != null) {
@@ -153,7 +161,14 @@ public class EntityManagerFactoryBuilder {
 			}
 			entityManagerFactoryBean
 					.setJpaVendorAdapter(EntityManagerFactoryBuilder.this.jpaVendorAdapter);
-			entityManagerFactoryBean.setDataSource(this.dataSource);
+
+			if (this.jta) {
+				entityManagerFactoryBean.setJtaDataSource(this.dataSource);
+			}
+			else {
+				entityManagerFactoryBean.setDataSource(this.dataSource);
+			}
+
 			entityManagerFactoryBean.setPackagesToScan(this.packagesToScan);
 			entityManagerFactoryBean.getJpaPropertyMap().putAll(
 					EntityManagerFactoryBuilder.this.properties.getProperties());

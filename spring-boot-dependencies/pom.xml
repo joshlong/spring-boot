@@ -120,12 +120,48 @@
 		<velocity.version>1.7</velocity.version>
 		<velocity-tools.version>2.0</velocity-tools.version>
 		<wsdl4j.version>1.6.3</wsdl4j.version>
+		<atomikos.version>3.9.3</atomikos.version>
+		<narayana.version>5.0.2.Final</narayana.version>
+		<bitronix.version>2.1.4</bitronix.version>
+		<jboss-transaction-api_1.2_spec.version>1.0.0.Final</jboss-transaction-api_1.2_spec.version>
 	</properties>
 	<prerequisites>
 		<maven>3.0.0</maven>
 	</prerequisites>
 	<dependencyManagement>
 		<dependencies>
+			<!-- JTA -->
+			<dependency>
+				<groupId>org.jboss.spec.javax.transaction</groupId>
+				<artifactId>jboss-transaction-api_1.2_spec</artifactId>
+				<version>${jboss-transaction-api_1.2_spec.version}</version>
+			</dependency>
+			<!-- Bitronix JTA -->
+			<dependency>
+				<groupId>org.codehaus.btm</groupId>
+				<artifactId>btm</artifactId>
+				<version>${bitronix.version}</version>
+			</dependency>
+
+			<!-- Atomikos JTA -->
+			<dependency>
+				<groupId>com.atomikos</groupId>
+				<artifactId>transactions-jta</artifactId>
+				<version>${atomikos.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.atomikos</groupId>
+				<artifactId>transactions-jdbc</artifactId>
+				<version>${atomikos.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.atomikos</groupId>
+				<artifactId>transactions-jms</artifactId>
+				<version>${atomikos.version}</version>
+			</dependency>
+
+
+
 			<!-- Spring Boot -->
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
@@ -338,6 +374,21 @@
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-starter-ws</artifactId>
+				<version>1.2.0.BUILD-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-jta-atomikos</artifactId>
+				<version>1.2.0.BUILD-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-jta-bitronix</artifactId>
+				<version>1.2.0.BUILD-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-jta-arjuna</artifactId>
 				<version>1.2.0.BUILD-SNAPSHOT</version>
 			</dependency>
 
