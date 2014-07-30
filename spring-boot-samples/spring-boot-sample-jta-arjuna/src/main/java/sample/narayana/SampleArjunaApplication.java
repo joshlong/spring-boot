@@ -2,7 +2,7 @@ package sample.narayana;
 
 import org.apache.activemq.ActiveMQXAConnectionFactory;
 import org.apache.activemq.jms.pool.XaPooledConnectionFactory;
-import org.postgresql.xa.PGXADataSource;
+import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanNameAware;
@@ -15,14 +15,7 @@ import org.springframework.boot.autoconfigure.jta.arjuna.ArjunaXaDataSourceFacto
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCreator;
-import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionStatus;
@@ -37,10 +30,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.sql.DataSource;
 import javax.sql.XADataSource;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -52,14 +41,15 @@ import java.util.List;
 public class SampleArjunaApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(
-                SampleArjunaApplication.class, args);
+        SpringApplication.run(SampleArjunaApplication.class, args);
     }
 
+    /**
+     * Note the distressing lack of symmetry! Arjuna doesn't provide a {@link javax.jms.ConnectionFactory} wrapper! -twitch-
+     */
     private static XaPooledConnectionFactory xaPooledConnectionFactory(ConnectionFactory connectionFactory) {
         XaPooledConnectionFactory xa = new XaPooledConnectionFactory();
-        xa.setTransactionManager(
-                com.arjuna.ats.jta.TransactionManager.transactionManager());
+        xa.setTransactionManager(com.arjuna.ats.jta.TransactionManager.transactionManager());
         xa.setConnectionFactory(connectionFactory);
         return xa;
     }
@@ -68,19 +58,19 @@ public class SampleArjunaApplication {
         return new ActiveMQXAConnectionFactory(url);
     }
 
-    private static javax.sql.XADataSource dataSource(String host, String db, String username, String pw) {
-        PGXADataSource pgxaDataSource = new PGXADataSource();
-        pgxaDataSource.setServerName(host);
-        pgxaDataSource.setDatabaseName(db);
-        pgxaDataSource.setUser(username);
-        pgxaDataSource.setPassword(pw);
-        return pgxaDataSource;
+    private static javax.sql.XADataSource rawDataSource( ) {
+        JdbcDataSource xaDataSource = new JdbcDataSource();
+        xaDataSource.setPassword("sa");
+        xaDataSource.setURL("jdbc:h2:tcp://localhost/~/crm");
+        xaDataSource.setUser("sa");
+
+        return xaDataSource;
     }
 
     @Bean
     public FactoryBean<DataSource> dataSource() {
-        XADataSource xaDataSource = dataSource("127.0.0.1", "crm", "crm", "crm");
-        return new ArjunaXaDataSourceFactoryBean(xaDataSource, "crm", "crm");
+        XADataSource xaDataSource = rawDataSource( );
+        return new ArjunaXaDataSourceFactoryBean(xaDataSource, "sa", "sa");
     }
 
     @Bean
@@ -90,7 +80,7 @@ public class SampleArjunaApplication {
     }
 
     @Bean
-    public CommandLineRunner jpa( AccountService accountService) {
+    public CommandLineRunner jpa(AccountService accountService) {
         return new AccountServiceCommandLineRunner(accountService);
     }
 
