@@ -7,8 +7,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * {@link org.springframework.transaction.jta.JtaTransactionManager} created by Spring.
  *
  * @author Josh Long
- * @since 1.2
+ * @since 1.2.0
  */
 @ConfigurationProperties(prefix = "spring.jta", ignoreUnknownFields = true)
 public class JtaProperties {
+
 }
