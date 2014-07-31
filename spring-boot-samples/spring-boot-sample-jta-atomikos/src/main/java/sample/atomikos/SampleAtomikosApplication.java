@@ -120,12 +120,11 @@ class AccountServiceCommandLineRunner implements CommandLineRunner, BeanNameAwar
     @Override
     public void run(String... args) throws Exception {
         this.logger.info(this.prefix);
+
         this.transactionTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             protected void doInTransactionWithoutResult(TransactionStatus status) {
-                AccountServiceCommandLineRunner.this.accountService
-                        .createAccountAndNotify(AccountServiceCommandLineRunner.this.prefix
-                                + "-jms");
+                accountService.createAccountAndNotify(prefix + "-jms");
                 iterateAccounts("insert");
                 status.setRollbackOnly();
             }

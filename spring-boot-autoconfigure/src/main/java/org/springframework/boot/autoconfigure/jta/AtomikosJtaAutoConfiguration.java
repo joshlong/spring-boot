@@ -81,6 +81,7 @@ public class AtomikosJtaAutoConfiguration extends AbstractJtaAutoConfiguration {
         return new UserTransactionServiceImp(properties);
     }
 
+    // TODO The UserTransactionManager must start *after* the pools are initialized and be destroyed *before* the pools are destroyed
     @ConditionalOnMissingBean
     @DependsOn(USER_TRANSACTION_SERVICE)
     @Bean(initMethod = "init", destroyMethod = "close")
