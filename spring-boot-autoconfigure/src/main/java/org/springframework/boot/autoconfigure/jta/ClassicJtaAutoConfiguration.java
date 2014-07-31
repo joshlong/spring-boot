@@ -1,10 +1,8 @@
 package org.springframework.boot.autoconfigure.jta;
 
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.jms.JmsAutoConfiguration;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -26,14 +24,15 @@ import org.springframework.transaction.jta.JtaTransactionManager;
 @Conditional(JtaCondition.class)
 @ConditionalOnClass(name = "javax.ejb.Singleton")
 @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
-@AutoConfigureAfter({ArjunaAutoConfiguration.class, BitronixAutoConfiguration.class, AtomikosAutoConfiguration.class})
+@AutoConfigureAfter({ ArjunaAutoConfiguration.class, BitronixAutoConfiguration.class,
+		AtomikosAutoConfiguration.class })
 public class ClassicJtaAutoConfiguration extends AbstractJtaAutoConfiguration {
 
-    @Override
-    protected JtaTransactionManager buildJtaTransactionManager() throws Exception {
-        JtaTransactionManager txManager = new JtaTransactionManager();
-        txManager.setAutodetectTransactionManager(true);
-        txManager.setAllowCustomIsolationLevels(true);
-        return txManager;
-    }
+	@Override
+	protected JtaTransactionManager buildJtaTransactionManager() throws Exception {
+		JtaTransactionManager txManager = new JtaTransactionManager();
+		txManager.setAutodetectTransactionManager(true);
+		txManager.setAllowCustomIsolationLevels(true);
+		return txManager;
+	}
 }

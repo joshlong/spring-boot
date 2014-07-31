@@ -48,7 +48,7 @@ public class ArjunaAutoConfiguration extends AbstractJtaAutoConfiguration {
 		String narayana = "narayana";
 		String path = this.jtaRootPathFor(environment, narayana);
 
-		long timeout = Long.parseLong(environment.getProperty(narayanaProperty
+		long timeout = Long.parseLong(environment.getProperty(this.narayanaProperty
 				+ ".timeout", Long.toString(60)));
 
 		Map<String, Object> h = new HashMap<String, Object>();
