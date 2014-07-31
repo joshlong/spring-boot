@@ -68,6 +68,11 @@ public class SampleBitronixApplication {
         };
     }
 
+    /**
+     * Bitronix offers a {@link bitronix.tm.resource.jdbc.PoolingDataSource}
+     * that - for reasons as yet not understood - does not accept a valid {@link javax.sql.XADataSource}
+     * directly, but instead expects to instantiate and initializing a target itself.
+     */
     @Bean
     public FactoryBean<PoolingDataSource> dataSource() {
         return new BitronixXaDataSourceFactoryBean<PGXADataSource>(PGXADataSource.class) {
@@ -85,8 +90,6 @@ public class SampleBitronixApplication {
     public CommandLineRunner jpa(AccountService accountService) {
         return new AccountServiceCommandLineRunner(accountService);
     }
-
-
 }
 
 class AccountServiceCommandLineRunner implements CommandLineRunner, BeanNameAware {

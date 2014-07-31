@@ -88,7 +88,6 @@ public class SampleArjunaApplication {
         return xa;
     }
 
-
     private ConnectionFactory targetConnectionFactory(String url) {
         return new ActiveMQXAConnectionFactory(url);
     }
@@ -96,9 +95,7 @@ public class SampleArjunaApplication {
     @Bean
     public CommandLineRunner jpa(AccountService accountService) {
         return new AccountServiceCommandLineRunner(accountService);
-
     }
-
 }
 
 class AccountServiceCommandLineRunner implements CommandLineRunner, BeanNameAware {

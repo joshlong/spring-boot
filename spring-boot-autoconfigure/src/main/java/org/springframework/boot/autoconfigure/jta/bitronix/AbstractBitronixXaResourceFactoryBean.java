@@ -12,9 +12,17 @@ import java.util.Map;
 
 /**
  * Convenient base type for Bitronix resource registration.
+ * Clients must subclass and extend the {@link #build()} method, providing a reference to
+ * Bitronix pooled type. Clients are expected to specify the generic parameters for {@link XA_DRIVER}
+ * and {@link BITRONIX_POOLED_RESOURCE}, as well.
+ * <p>
+ * Consumers of the specialized type should override the {@link #configureXaResource(Object)} method
+ * to be given a callback for the reference itself. These configuration will be recorded and <EM>forwarded</EM> to
+ * the underlying reference as a {@link java.util.Properties}.
  *
- * @param <XA_DRIVER>                XA specific subtype
- * @param <BITRONIX_POOLED_RESOURCE> pooled instance
+ * @param <XA_DRIVER>                XA specific type of the target reference.
+ * @param <BITRONIX_POOLED_RESOURCE> the Bitronix-specific pooled instance that wraps the
+ *                                   target resource of type {@link XA_DRIVER}.
  * @author Josh Long
  */
 abstract class AbstractBitronixXaResourceFactoryBean<XA_DRIVER, BITRONIX_POOLED_RESOURCE>
@@ -98,7 +106,7 @@ abstract class AbstractBitronixXaResourceFactoryBean<XA_DRIVER, BITRONIX_POOLED_
     }
 
     @SuppressWarnings("unchecked")
-    protected  <T> T getPropertyRecordingProxy(final Class<T> clzz, final Map<String, Object> holderForProperties) {
+    protected <T> T getPropertyRecordingProxy(final Class<T> clzz, final Map<String, Object> holderForProperties) {
         ProxyFactoryBean proxyFactoryBean = new ProxyFactoryBean();
         proxyFactoryBean.setTargetClass(clzz);
         proxyFactoryBean.setProxyTargetClass(true);
