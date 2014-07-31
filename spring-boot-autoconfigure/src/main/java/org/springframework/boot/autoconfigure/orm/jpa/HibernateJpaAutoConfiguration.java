@@ -50,7 +50,7 @@ import org.springframework.util.ClassUtils;
 @ConditionalOnClass({ LocalContainerEntityManagerFactoryBean.class,
 		EnableTransactionManagement.class, EntityManager.class })
 @Conditional(HibernateEntityManagerCondition.class)
-@AutoConfigureAfter({ ClassicJtaAutoConfiguration.class, ArjunaAutoConfiguration.class,BitronixAutoConfiguration.class, AtomikosAutoConfiguration.class, DataSourceAutoConfiguration.class })
+@AutoConfigureAfter({ JndiJtaAutoConfiguration.class, ArjunaJtaAutoConfiguration.class,BitronixJtaAutoConfiguration.class, AtomikosJtaAutoConfiguration.class, DataSourceAutoConfiguration.class })
 public class HibernateJpaAutoConfiguration extends JpaBaseConfiguration {
 
 	private static final String JTA_PLATFORM = "hibernate.transaction.jta.platform";

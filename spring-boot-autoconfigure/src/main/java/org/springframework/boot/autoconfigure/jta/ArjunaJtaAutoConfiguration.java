@@ -32,7 +32,7 @@ import org.springframework.transaction.jta.JtaTransactionManager;
 @Conditional(JtaCondition.class)
 @ConditionalOnClass(com.arjuna.ats.jta.UserTransaction.class)
 @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
-public class ArjunaAutoConfiguration extends AbstractJtaAutoConfiguration {
+public class ArjunaJtaAutoConfiguration extends AbstractJtaAutoConfiguration {
 
 	private String narayanaProperty = "spring.jta.narayana";
 

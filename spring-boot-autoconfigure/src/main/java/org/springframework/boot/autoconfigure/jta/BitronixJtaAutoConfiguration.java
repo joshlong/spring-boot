@@ -33,7 +33,7 @@ import bitronix.tm.TransactionManagerServices;
 @Configuration
 @ConditionalOnClass(bitronix.tm.jndi.BitronixContext.class)
 @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
-public class BitronixAutoConfiguration extends AbstractJtaAutoConfiguration {
+public class BitronixJtaAutoConfiguration extends AbstractJtaAutoConfiguration {
 
 	private String bitronixPropertyPrefix = "spring.jta.bitronix.";
 

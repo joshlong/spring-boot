@@ -26,17 +26,17 @@ public class JtaAutoConfigurationTests {
 
     @Test
     public void testAtomikosAutoConfiguration() throws Exception {
-        testContextFor(AtomikosAutoConfiguration.class, UserTransactionManager.class);
+        testContextFor(AtomikosJtaAutoConfiguration.class, UserTransactionManager.class);
     }
 
     @Test
     public void testBitronixAutoConfiguration() throws Exception {
-        testContextFor(BitronixAutoConfiguration.class, BitronixTransactionManager.class);
+        testContextFor(BitronixJtaAutoConfiguration.class, BitronixTransactionManager.class);
     }
 
     @Test
     public void testArjunaAutoConfiguration() throws Exception {
-        testContextFor(ArjunaAutoConfiguration.class, TransactionManagerImple.class);
+        testContextFor(ArjunaJtaAutoConfiguration.class, TransactionManagerImple.class);
     }
 
     private AnnotationConfigApplicationContext buildApplicationContextFrom(Class<?>... classes) {

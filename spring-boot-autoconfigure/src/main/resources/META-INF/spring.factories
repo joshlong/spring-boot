@@ -23,6 +23,10 @@ org.springframework.boot.autoconfigure.jms.JmsAutoConfiguration,\
 org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration,\
 org.springframework.boot.autoconfigure.jms.activemq.ActiveMQAutoConfiguration,\
 org.springframework.boot.autoconfigure.jms.hornetq.HornetQAutoConfiguration,\
+org.springframework.boot.autoconfigure.jta.JndiJtaAutoConfiguration,\
+org.springframework.boot.autoconfigure.jta.ArjunaJtaAutoConfiguration,\
+org.springframework.boot.autoconfigure.jta.AtomikosJtaAutoConfiguration,\
+org.springframework.boot.autoconfigure.jta.BitronixJtaAutoConfiguration,\
 org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchAutoConfiguration,\
 org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchDataAutoConfiguration,\
 org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,\
@@ -52,11 +56,7 @@ org.springframework.boot.autoconfigure.web.MultipartAutoConfiguration,\
 org.springframework.boot.autoconfigure.web.HttpMessageConvertersAutoConfiguration,\
 org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration,\
 org.springframework.boot.autoconfigure.web.ErrorMvcAutoConfiguration,\
-org.springframework.boot.autoconfigure.websocket.WebSocketAutoConfiguration,\
-org.springframework.boot.autoconfigure.jta.ClassicJtaAutoConfiguration,\
-org.springframework.boot.autoconfigure.jta.ArjunaAutoConfiguration,\
-org.springframework.boot.autoconfigure.jta.AtomikosAutoConfiguration,\
-org.springframework.boot.autoconfigure.jta.BitronixAutoConfiguration
+org.springframework.boot.autoconfigure.websocket.WebSocketAutoConfiguration
 
 
 # Template availability providers
