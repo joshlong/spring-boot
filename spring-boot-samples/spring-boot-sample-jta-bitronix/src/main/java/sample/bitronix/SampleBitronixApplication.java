@@ -35,12 +35,14 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Demonstrates how to use Bitronix and JTA together to coordinate a transaction database connection (to PostgreSQL)
- * and a transactional Message Queue connection (to ActiveMQ, in this case)
+ * This sample uses the <A href="http://docs.codehaus.org/display/BTM/Home">Bitronix JTA</A>
+ * engine. Bitronix is a single Maven dependency. You can use the
+ * {@code org.springframework.boot:spring-boot-starter-jta-bitronix} starter or simply import
+ * the dependency itself. This code works against the very stable Bitronix 2.1 line.
  *
  * @author Josh Long
  */
- @Configuration
+@Configuration
 @ComponentScan
 @EnableAutoConfiguration
 public class SampleBitronixApplication {
@@ -49,6 +51,11 @@ public class SampleBitronixApplication {
         SpringApplication.run(SampleBitronixApplication.class, args);
     }
 
+    /**
+     * Bitronix offers a {@link bitronix.tm.resource.jms.PoolingConnectionFactory}
+     * that - for reasons as yet not understood - does not accept a valid {@link javax.jms.XAConnectionFactory}
+     * directly, but instead expects to instantiate and initializing a target itself.
+     */
     @Bean
     public FactoryBean<PoolingConnectionFactory> connectionFactory() {
 
