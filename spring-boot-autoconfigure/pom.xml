@@ -26,6 +26,11 @@
 		</dependency>
 		<!-- Optional -->
 		<dependency>
+			<groupId>com.atomikos</groupId>
+			<artifactId>transactions-jta</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 			<optional>true</optional>
@@ -81,6 +86,11 @@
 			<optional>true</optional>
 		</dependency>
 		<dependency>
+			<groupId>org.codehaus.btm</groupId>
+			<artifactId>btm</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
 			<groupId>org.codehaus.groovy</groupId>
 			<artifactId>groovy-templates</artifactId>
 			<optional>true</optional>
@@ -123,6 +133,11 @@
 		<dependency>
 			<groupId>org.hornetq</groupId>
 			<artifactId>hornetq-jms-server</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.narayana.jta</groupId>
+			<artifactId>narayana-jta</artifactId>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
@@ -313,58 +328,6 @@
 		<dependency>
 			<groupId>org.aspectj</groupId>
 			<artifactId>aspectjweaver</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<!-- JTA -->
-		<dependency>
-			<groupId>com.atomikos</groupId>
-			<artifactId>transactions-jta</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<version>9.3-1101-jdbc3</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.codehaus.btm</groupId>
-			<artifactId>btm</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>com.atomikos</groupId>
-			<artifactId>transactions-jms</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>com.atomikos</groupId>
-			<artifactId>transactions-jdbc</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<!-- <dependency> <groupId>org.jboss.spec.javax.transaction</groupId> <artifactId>jboss-transaction-api_1.1_spec</artifactId>
-			<optional>true</optional> </dependency> -->
-		<!-- <dependency> <groupId>org.jboss.narayana.jta</groupId> <artifactId>jta</artifactId>
-			<optional>true</optional> </dependency> <dependency> <groupId>org.jboss.narayana.jts</groupId>
-			<artifactId>narayana-jts-integration</artifactId> <optional>true</optional>
-			</dependency> -->
-
-		<dependency>
-			<groupId>org.jboss.narayana.jta</groupId>
-			<artifactId>jta</artifactId>
-			<version>${narayana.version}</version>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.jboss.narayana.jts</groupId>
-			<artifactId>narayana-jts-integration</artifactId>
-			<version>${narayana.version}</version>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.jboss.narayana.jta</groupId>
-			<artifactId>narayana-jta</artifactId>
-			<version>${narayana.version}</version>
 			<optional>true</optional>
 		</dependency>
 		<!-- Test -->

@@ -48,6 +48,8 @@
 		<!-- Third Party -->
 		<activemq.version>5.9.1</activemq.version>
 		<aspectj.version>1.8.1</aspectj.version>
+		<atomikos.version>3.9.3</atomikos.version>
+		<bitronix.version>2.1.4</bitronix.version>
 		<codahale-metrics.version>3.0.2</codahale-metrics.version>
 		<commons-beanutils.version>1.9.2</commons-beanutils.version>
 		<commons-collections.version>3.2.1</commons-collections.version>
@@ -75,6 +77,7 @@
 		<jackson.version>2.3.3</jackson.version>
 		<janino.version>2.6.1</janino.version>
 		<javassist.version>3.18.1-GA</javassist.version> <!-- Same as Hibernate -->
+		<jboss-transaction-spi.version>7.1.0.Final</jboss-transaction-spi.version>
 		<jedis.version>2.4.2</jedis.version>
 		<jetty.version>8.1.15.v20140411</jetty.version>
 		<jetty-jsp.version>2.2.0.v201112011158</jetty-jsp.version>
@@ -84,6 +87,7 @@
 		<jolokia.version>1.2.2</jolokia.version>
 		<json-path.version>0.9.1</json-path.version>
 		<jstl.version>1.2</jstl.version>
+		<jta.version>1.1</jta.version>
 		<junit.version>4.11</junit.version>
 		<liquibase.version>3.0.8</liquibase.version>
 		<log4j.version>1.2.17</log4j.version>
@@ -91,6 +95,7 @@
 		<mockito.version>1.9.5</mockito.version>
 		<mongodb.version>2.12.2</mongodb.version>
 		<mysql.version>5.1.31</mysql.version>
+		<narayana.version>5.0.2.Final</narayana.version>
 		<reactor.version>1.1.2.RELEASE</reactor.version>
 		<servlet-api.version>3.0.1</servlet-api.version>
 		<slf4j.version>1.7.7</slf4j.version>
@@ -120,56 +125,12 @@
 		<velocity.version>1.7</velocity.version>
 		<velocity-tools.version>2.0</velocity-tools.version>
 		<wsdl4j.version>1.6.3</wsdl4j.version>
-		<atomikos.version>3.9.3</atomikos.version>
-		<narayana.version>5.0.2.Final</narayana.version>
-		<bitronix.version>2.1.4</bitronix.version>
-        <jboss-transaction-spi.version>7.1.0.Final</jboss-transaction-spi.version>
-
-        <!--<jboss-transaction-api_1.2_spec.version>1.0.0.Final</jboss-transaction-api_1.2_spec.version>-->
 	</properties>
 	<prerequisites>
 		<maven>3.0.0</maven>
 	</prerequisites>
 	<dependencyManagement>
 		<dependencies>
-			<!-- Arjuna/Narayana JTA -->
-           <!-- <dependency>
-                <groupId>org.jboss.narayana.jta</groupId>
-                <artifactId>narayana-jta</artifactId>
-                <version>${narayana.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss</groupId>
-                <artifactId>jboss-transaction-spi</artifactId>
-                <version>${jboss-transaction-spi.version}</version>
-            </dependency>-->
-
-			<!-- Bitronix JTA -->
-			<dependency>
-				<groupId>org.codehaus.btm</groupId>
-				<artifactId>btm</artifactId>
-				<version>${bitronix.version}</version>
-			</dependency>
-
-			<!-- Atomikos JTA -->
-			<dependency>
-				<groupId>com.atomikos</groupId>
-				<artifactId>transactions-jta</artifactId>
-				<version>${atomikos.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>com.atomikos</groupId>
-				<artifactId>transactions-jdbc</artifactId>
-				<version>${atomikos.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>com.atomikos</groupId>
-				<artifactId>transactions-jms</artifactId>
-				<version>${atomikos.version}</version>
-			</dependency>
-
-
-
 			<!-- Spring Boot -->
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
@@ -300,6 +261,21 @@
 			</dependency>
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-jta-atomikos</artifactId>
+				<version>1.2.0.BUILD-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-jta-bitronix</artifactId>
+				<version>1.2.0.BUILD-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-jta-arjuna</artifactId>
+				<version>1.2.0.BUILD-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-starter-log4j</artifactId>
 				<version>1.2.0.BUILD-SNAPSHOT</version>
 			</dependency>
@@ -384,27 +360,27 @@
 				<artifactId>spring-boot-starter-ws</artifactId>
 				<version>1.2.0.BUILD-SNAPSHOT</version>
 			</dependency>
-			<dependency>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-starter-jta-atomikos</artifactId>
-				<version>1.2.0.BUILD-SNAPSHOT</version>
-			</dependency>
-			<dependency>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-starter-jta-bitronix</artifactId>
-				<version>1.2.0.BUILD-SNAPSHOT</version>
-			</dependency>
-			<dependency>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-starter-jta-arjuna</artifactId>
-				<version>1.2.0.BUILD-SNAPSHOT</version>
-			</dependency>
 
 			<!-- Third Party -->
 			<dependency>
 				<groupId>ch.qos.logback</groupId>
 				<artifactId>logback-classic</artifactId>
 				<version>${logback.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.atomikos</groupId>
+				<artifactId>transactions-jdbc</artifactId>
+				<version>${atomikos.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.atomikos</groupId>
+				<artifactId>transactions-jms</artifactId>
+				<version>${atomikos.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.atomikos</groupId>
+				<artifactId>transactions-jta</artifactId>
+				<version>${atomikos.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.codahale.metrics</groupId>
@@ -425,6 +401,11 @@
 				<groupId>com.codahale.metrics</groupId>
 				<artifactId>metrics-servlets</artifactId>
 				<version>${codahale-metrics.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.codehaus.btm</groupId>
+				<artifactId>btm</artifactId>
+				<version>${bitronix.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.codehaus.janino</groupId>
@@ -532,6 +513,11 @@
 				<groupId>javax.servlet</groupId>
 				<artifactId>jstl</artifactId>
 				<version>${jstl.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>javax.transaction</groupId>
+				<artifactId>jta</artifactId>
+				<version>${jta.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>jaxen</groupId>
@@ -897,6 +883,16 @@
 				<groupId>org.javassist</groupId>
 				<artifactId>javassist</artifactId>
 				<version>${javassist.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.jboss</groupId>
+				<artifactId>jboss-transaction-spi</artifactId>
+				<version>${jboss-transaction-spi.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.jboss.narayana.jta</groupId>
+				<artifactId>narayana-jta</artifactId>
+				<version>${narayana.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.jolokia</groupId>
