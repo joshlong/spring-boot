@@ -25,7 +25,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Base class for configuration of a database pool.
+ * Base class for configuration of a data source.
  *
  * @author Dave Syer
  * @author Maciej Walkowiak
@@ -35,6 +35,8 @@ import org.springframework.util.StringUtils;
 public class DataSourceProperties implements BeanClassLoaderAware, InitializingBean {
 
 	private String driverClassName;
+
+	private String dataSourceClassName;
 
 	private String url;
 
@@ -99,6 +101,10 @@ public class DataSourceProperties implements BeanClassLoaderAware, InitializingB
 		return driverClassName;
 	}
 
+	public void setDriverClassName(String driverClassName) {
+		this.driverClassName = driverClassName;
+	}
+
 	public String getUrl() {
 		if (StringUtils.hasText(this.url)) {
 			return this.url;
@@ -132,10 +138,6 @@ public class DataSourceProperties implements BeanClassLoaderAware, InitializingB
 			return "";
 		}
 		return null;
-	}
-
-	public void setDriverClassName(String driverClassName) {
-		this.driverClassName = driverClassName;
 	}
 
 	public void setUrl(String url) {

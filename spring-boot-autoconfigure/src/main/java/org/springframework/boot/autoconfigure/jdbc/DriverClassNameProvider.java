@@ -54,7 +54,7 @@ class DriverClassNameProvider {
 	 * @param jdbcUrl JDBC URL
 	 * @return driver class name or null if not found
 	 */
-	String getDriverClassName(final String jdbcUrl) {
+	String getDriverClassName(String jdbcUrl) {
 		Assert.notNull(jdbcUrl, "JdbcUrl must not be null");
 		Assert.isTrue(jdbcUrl.startsWith(JDBC_URL_PREFIX), "JdbcUrl must start with '"
 				+ JDBC_URL_PREFIX + "'");

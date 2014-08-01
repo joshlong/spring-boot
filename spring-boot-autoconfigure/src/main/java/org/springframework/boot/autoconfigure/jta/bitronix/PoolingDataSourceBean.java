@@ -77,6 +77,7 @@ public class PoolingDataSourceBean extends PoolingDataSource implements BeanName
 		if (!StringUtils.hasLength(getUniqueName())) {
 			setUniqueName(this.beanName);
 		}
+		init();
 	}
 
 	public void setDataSource(XADataSource dataSource) {

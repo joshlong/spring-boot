@@ -61,6 +61,7 @@ public class ActiveMQAutoConfiguration {
 	}
 
 	static abstract class BrokerTypeCondition extends SpringBootCondition {
+
 		private final boolean embedded;
 
 		BrokerTypeCondition(boolean embedded) {
