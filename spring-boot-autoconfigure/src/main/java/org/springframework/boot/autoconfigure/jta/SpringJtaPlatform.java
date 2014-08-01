@@ -35,8 +35,8 @@ public class SpringJtaPlatform extends AbstractJtaPlatform {
 
 	protected boolean hasTransactionManager() {
 		boolean yes = JTA_TRANSACTION_MANAGER.get() != null;
-		if (!yes && logger.isInfoEnabled()) {
-			logger.info(getClass().getName()
+		if (!yes && this.logger.isInfoEnabled()) {
+			this.logger.info(getClass().getName()
 					+ ": JTA_TRANSACTION_MANAGER.get() == null. ");
 		}
 		return yes;

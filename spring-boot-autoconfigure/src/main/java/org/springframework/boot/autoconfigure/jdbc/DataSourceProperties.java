@@ -109,7 +109,7 @@ public class DataSourceProperties implements BeanClassLoaderAware, InitializingB
 					"Cannot determine embedded database url for database type "
 							+ this.embeddedDatabaseConnection
 							+ ". If you want an embedded "
-							+ "database please put a supported on on the classpath.");
+							+ "database please put a supported one on the classpath.");
 		}
 		return url;
 	}
@@ -199,7 +199,7 @@ public class DataSourceProperties implements BeanClassLoaderAware, InitializingB
 	}
 
 	public String getSqlScriptEncoding() {
-		return sqlScriptEncoding;
+		return this.sqlScriptEncoding;
 	}
 
 	public void setSqlScriptEncoding(String sqlScriptEncoding) {
