@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package org.springframework.boot.orm.jpa;
+package org.springframework.boot.orm.jpa.hibernate;
 
 import org.hibernate.cfg.ImprovedNamingStrategy;
 import org.hibernate.cfg.NamingStrategy;
+import org.hibernate.internal.util.StringHelper;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Hibernate {@link NamingStrategy} that follows Spring recommended naming conventions.
@@ -26,11 +29,19 @@ import org.hibernate.cfg.NamingStrategy;
  *
  * @author Phillip Webb
  * @see "http://stackoverflow.com/questions/7689206/ejb3namingstrategy-vs-improvednamingstrategy-foreign-key-naming"
- * @deprecated since 1.2 in favor of
- * {@link org.springframework.boot.orm.jpa.hibernate.SpringNamingStrategy}
  */
-@Deprecated
-public class SpringNamingStrategy extends
-		org.springframework.boot.orm.jpa.hibernate.SpringNamingStrategy {
+public class SpringNamingStrategy extends ImprovedNamingStrategy {
+
+	@Override
+	public String foreignKeyColumnName(String propertyName, String propertyEntityName,
+			String propertyTableName, String referencedColumnName) {
+		String name = propertyTableName;
+		if (propertyName != null) {
+			name = StringHelper.unqualify(propertyName);
+		}
+		Assert.state(StringUtils.hasLength(name),
+				"Unable to generate foreignKeyColumnName");
+		return columnName(name) + "_" + referencedColumnName;
+	}
 
 }

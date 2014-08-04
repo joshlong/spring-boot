@@ -16,6 +16,7 @@
 
 package org.springframework.boot.autoconfigure.orm.jpa;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.persistence.EntityManager;
@@ -28,8 +29,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.jta.*;
+import org.springframework.boot.autoconfigure.jta.ArjunaJtaAutoConfiguration;
+import org.springframework.boot.autoconfigure.jta.AtomikosJtaAutoConfiguration;
+import org.springframework.boot.autoconfigure.jta.BitronixJtaAutoConfiguration;
+import org.springframework.boot.autoconfigure.jta.JndiJtaAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.HibernateEntityManagerCondition;
+import org.springframework.boot.orm.jpa.hibernate.SpringJtaPlatform;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -38,6 +43,7 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.AbstractJpaVendorAdapter;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.jta.JtaTransactionManager;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -50,7 +56,9 @@ import org.springframework.util.ClassUtils;
 @ConditionalOnClass({ LocalContainerEntityManagerFactoryBean.class,
 		EnableTransactionManagement.class, EntityManager.class })
 @Conditional(HibernateEntityManagerCondition.class)
-@AutoConfigureAfter({ JndiJtaAutoConfiguration.class, ArjunaJtaAutoConfiguration.class,BitronixJtaAutoConfiguration.class, AtomikosJtaAutoConfiguration.class, DataSourceAutoConfiguration.class })
+@AutoConfigureAfter({ JndiJtaAutoConfiguration.class, ArjunaJtaAutoConfiguration.class,
+		BitronixJtaAutoConfiguration.class, AtomikosJtaAutoConfiguration.class,
+		DataSourceAutoConfiguration.class })
 public class HibernateJpaAutoConfiguration extends JpaBaseConfiguration {
 
 	private static final String JTA_PLATFORM = "hibernate.transaction.jta.platform";
@@ -67,15 +75,19 @@ public class HibernateJpaAutoConfiguration extends JpaBaseConfiguration {
 	}
 
 	@Override
-	protected Map<String, String> getVendorProperties() {
-		return this.properties.getHibernateProperties(this.dataSource);
+	protected Map<String, Object> getVendorProperties() {
+		Map<String, Object> vendorProperties = new LinkedHashMap<String, Object>();
+		vendorProperties.putAll(this.properties.getHibernateProperties(this.dataSource));
+		return vendorProperties;
 	}
 
 	@Override
-	protected void customizeVendorProperties(Map<String, String> vendorProperties) {
+	protected void customizeVendorProperties(Map<String, Object> vendorProperties) {
 		super.customizeVendorProperties(vendorProperties);
-		if (isJta() && !vendorProperties.containsKey(JTA_PLATFORM)) {
-			vendorProperties.put(JTA_PLATFORM, SpringJtaPlatform.class.getName());
+		JtaTransactionManager jtaTransactionManager = getJtaTransactionManager();
+		if (jtaTransactionManager != null && !vendorProperties.containsKey(JTA_PLATFORM)) {
+			vendorProperties.put(JTA_PLATFORM, new SpringJtaPlatform(
+					jtaTransactionManager));
 		}
 	}
 

@@ -110,7 +110,7 @@ public abstract class JpaBaseConfiguration implements BeanFactoryAware {
 	@ConditionalOnMissingBean
 	public LocalContainerEntityManagerFactoryBean entityManagerFactory(
 			EntityManagerFactoryBuilder factory) {
-		Map<String, String> vendorProperties = getVendorProperties();
+		Map<String, Object> vendorProperties = getVendorProperties();
 		customizeVendorProperties(vendorProperties);
 		Builder builder = factory.dataSource(this.dataSource);
 		builder.packages(getPackagesToScan());
@@ -121,14 +121,14 @@ public abstract class JpaBaseConfiguration implements BeanFactoryAware {
 
 	protected abstract AbstractJpaVendorAdapter createJpaVendorAdapter();
 
-	protected abstract Map<String, String> getVendorProperties();
+	protected abstract Map<String, Object> getVendorProperties();
 
 	/**
 	 * Customize vendor properties before they are used. Allows for post processing (for
 	 * example to configure JTA specific settings).
 	 * @param vendorProperties the vendor properties to customize
 	 */
-	protected void customizeVendorProperties(Map<String, String> vendorProperties) {
+	protected void customizeVendorProperties(Map<String, Object> vendorProperties) {
 		if (isJta() && !vendorProperties.containsKey(TRANSACTION_TYPE)) {
 			vendorProperties.put(TRANSACTION_TYPE, "JTA");
 		}
@@ -148,6 +148,13 @@ public abstract class JpaBaseConfiguration implements BeanFactoryAware {
 
 	protected void configure(
 			LocalContainerEntityManagerFactoryBean entityManagerFactoryBean) {
+	}
+
+	/**
+	 * @return the jtaTransactionManager or {@code null}
+	 */
+	protected JtaTransactionManager getJtaTransactionManager() {
+		return this.jtaTransactionManager;
 	}
 
 	/**

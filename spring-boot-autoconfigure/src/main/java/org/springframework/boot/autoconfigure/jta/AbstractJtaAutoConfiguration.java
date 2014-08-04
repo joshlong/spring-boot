@@ -6,6 +6,7 @@ import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.orm.jpa.hibernate.SpringJtaPlatform;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -33,13 +34,6 @@ abstract class AbstractJtaAutoConfiguration {
 	 */
 	public static final String TRANSACTION_MANAGER_NAME = "transactionManager";
 
-	@Bean
-	@ConditionalOnClass(org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform.class)
-	@ConditionalOnMissingBean(SpringJtaPlatform.class)
-	public SpringJtaPlatform jtaPlatform() {
-		return new SpringJtaPlatform();
-	}
-
 	/**
 	 * registers Spring's
 	 * {@link org.springframework.transaction.jta.JtaTransactionManager}
@@ -49,11 +43,8 @@ abstract class AbstractJtaAutoConfiguration {
 			SpringJtaPlatform.class, PlatformTransactionManager.class })
 	@Bean(name = TRANSACTION_MANAGER_NAME)
 	public JtaTransactionManager transactionManagerBean() throws Exception {
-
 		JtaTransactionManager jtaTransactionManager = buildJtaTransactionManager();
-
 		this.configureJtaTransactionManager(jtaTransactionManager);
-
 		return jtaTransactionManager;
 	}
 
@@ -74,14 +65,8 @@ abstract class AbstractJtaAutoConfiguration {
 	@Bean(name = TRANSACTION_MANAGER_NAME)
 	public JtaTransactionManager transactionManagerBean(SpringJtaPlatform jtaPlatform)
 			throws Exception {
-
 		JtaTransactionManager jtaTransactionManager = buildJtaTransactionManager();
-
-		// make this available for JPA integration with JTA, if required.
-		SpringJtaPlatform.JTA_TRANSACTION_MANAGER.set(jtaTransactionManager);
-
 		this.configureJtaTransactionManager(jtaTransactionManager);
-
 		return jtaTransactionManager;
 	}
 
