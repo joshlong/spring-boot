@@ -17,6 +17,7 @@
 package org.springframework.boot.autoconfigure.jdbc;
 
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Enumeration of common database drivers.
@@ -40,12 +41,12 @@ enum DatabaseDriver {
 	/**
 	 * H2.
 	 */
-	H2("org.h2.Driver"),
+	H2("org.h2.Driver", "org.h2.jdbcx.JdbcDataSource"),
 
 	/**
 	 * HyperSQL DataBase.
 	 */
-	HSQLDB("org.hsqldb.jdbcDriver"),
+	HSQLDB("org.hsqldb.jdbcDriver", "org.hsqldb.jdbc.pool.JDBCXADataSource"),
 
 	/**
 	 * SQL Lite.
@@ -55,12 +56,12 @@ enum DatabaseDriver {
 	/**
 	 * MySQL.
 	 */
-	MYSQL("com.mysql.jdbc.Driver"),
+	MYSQL("com.mysql.jdbc.Driver", "org.mysql.jdbc.MySQLDataSource"),
 
 	/**
 	 * Maria DB.
 	 */
-	MARIADB("org.mariadb.jdbc.Driver"),
+	MARIADB("org.mariadb.jdbc.Driver", "org.mariadb.jdbc.MySQLDataSource"),
 
 	/**
 	 * Google App Engine.
@@ -70,12 +71,12 @@ enum DatabaseDriver {
 	/**
 	 * Oracle
 	 */
-	ORACLE("oracle.jdbc.OracleDriver"),
+	ORACLE("oracle.jdbc.OracleDriver", "oracle.jdbc.xa.OracleXADataSource"),
 
 	/**
 	 * Postres
 	 */
-	POSTGRESQL("org.postgresql.Driver"),
+	POSTGRESQL("org.postgresql.Driver", "org.postgresql.xa.PGXADataSource"),
 
 	/**
 	 * JTDS
@@ -89,30 +90,45 @@ enum DatabaseDriver {
 
 	private final String driverClassName;
 
+	private final String xaDataSourceClassName;
+
 	private DatabaseDriver(String driverClassName) {
+		this(driverClassName, null);
+	}
+
+	private DatabaseDriver(String driverClassName, String xaDataSourceClassName) {
 		this.driverClassName = driverClassName;
+		this.xaDataSourceClassName = xaDataSourceClassName;
 	}
 
 	/**
-	 * @return the driverClassName
+	 * @return the driverClassName or {@code null}
 	 */
 	public String getDriverClassName() {
 		return this.driverClassName;
 	}
 
 	/**
+	 * @return the xaDataSourceClassName or {@code null}
+	 */
+	public String getXaDataSourceClassName() {
+		return this.xaDataSourceClassName;
+	}
+
+	/**
 	 * Find a {@link DatabaseDriver} for the given URL.
-	 * @param jdbcUrl JDBC URL
+	 * @param url JDBC URL
 	 * @return driver class name or {@link #UNKNOWN} if not found
 	 */
-	public static DatabaseDriver fromJdbcUrl(String jdbcUrl) {
-		Assert.notNull(jdbcUrl, "JdbcUrl must not be null");
-		Assert.isTrue(jdbcUrl.startsWith("jdbc"), "JdbcUrl must start with 'jdbc'");
-		String urlWithoutPrefix = jdbcUrl.substring("jdbc".length()).toLowerCase();
-		for (DatabaseDriver driver : values()) {
-			String prefix = ":" + driver.name().toLowerCase() + ":";
-			if (driver != UNKNOWN && urlWithoutPrefix.startsWith(prefix)) {
-				return driver;
+	public static DatabaseDriver fromJdbcUrl(String url) {
+		if (StringUtils.hasLength(url)) {
+			Assert.isTrue(url.startsWith("jdbc"), "URL must start with 'jdbc'");
+			String urlWithoutPrefix = url.substring("jdbc".length()).toLowerCase();
+			for (DatabaseDriver driver : values()) {
+				String prefix = ":" + driver.name().toLowerCase() + ":";
+				if (driver != UNKNOWN && urlWithoutPrefix.startsWith(prefix)) {
+					return driver;
+				}
 			}
 		}
 		return UNKNOWN;

@@ -63,7 +63,7 @@ public class DataSourceProperties implements BeanClassLoaderAware, InitializingB
 
 	private EmbeddedDatabaseConnection embeddedDatabaseConnection = EmbeddedDatabaseConnection.NONE;
 
-	private Xa xa;
+	private Xa xa = new Xa();
 
 	@Override
 	public void setBeanClassLoader(ClassLoader classLoader) {

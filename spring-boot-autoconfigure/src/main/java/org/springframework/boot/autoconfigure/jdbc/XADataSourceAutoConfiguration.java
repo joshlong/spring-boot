@@ -20,15 +20,22 @@ import javax.sql.DataSource;
 import javax.sql.XADataSource;
 import javax.transaction.TransactionManager;
 
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.MutablePropertyValues;
+import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.bind.RelaxedDataBinder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.jta.XADataSourceWrapper;
 import org.springframework.context.annotation.Bean;
+import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for {@link DataSource} with XA.
@@ -41,7 +48,7 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass(TransactionManager.class)
 @ConditionalOnBean(XADataSourceWrapper.class)
 @ConditionalOnMissingBean(DataSource.class)
-public class XADataSourceAutoConfiguration {
+public class XADataSourceAutoConfiguration implements BeanClassLoaderAware {
 
 	@Autowired
 	private XADataSourceWrapper wrapper;
@@ -49,15 +56,58 @@ public class XADataSourceAutoConfiguration {
 	@Autowired
 	private DataSourceProperties properties;
 
-	@Bean
-	@ConditionalOnMissingBean
-	public XADataSource xaDataSource() {
-		return null;
-	}
+	@Autowired(required = false)
+	private XADataSource xaDataSource;
+
+	private ClassLoader classLoader;
 
 	@Bean
-	public DataSource dataSource(XADataSource xaDataSource) {
+	public DataSource dataSource() {
+		XADataSource xaDataSource = this.xaDataSource;
+		if (xaDataSource == null) {
+			xaDataSource = createXaDataSource();
+		}
 		return this.wrapper.wrapDataSource(xaDataSource);
+	}
+
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		this.classLoader = classLoader;
+	}
+
+	private XADataSource createXaDataSource() {
+		String className = this.properties.getXa().getDataSourceClassName();
+		if (!StringUtils.hasLength(className)) {
+			className = DatabaseDriver.fromJdbcUrl(this.properties.getUrl())
+					.getXaDataSourceClassName();
+		}
+		Assert.state(StringUtils.hasLength(className),
+				"No XA DataSource class name specified");
+		XADataSource dataSource = createXaDataSourceInstance(className);
+		bindXaProperties(dataSource, this.properties);
+		return dataSource;
+	}
+
+	private XADataSource createXaDataSourceInstance(String className) {
+		try {
+			Class<?> dataSourceClass = ClassUtils.forName(className, this.classLoader);
+			Object instance = BeanUtils.instantiate(dataSourceClass);
+			Assert.isInstanceOf(XADataSource.class, instance);
+			return (XADataSource) instance;
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException(
+					"Unable to create XADataSource instance from '" + className + "'");
+		}
+	}
+
+	private void bindXaProperties(XADataSource target, DataSourceProperties properties) {
+		MutablePropertyValues values = new MutablePropertyValues();
+		values.add("user", this.properties.getUsername());
+		values.add("password", this.properties.getPassword());
+		values.add("url", this.properties.getUrl());
+		values.addPropertyValues(properties.getXa().getProperties());
+		new RelaxedDataBinder(target).withAlias("user", "username").bind(values);
 	}
 
 }

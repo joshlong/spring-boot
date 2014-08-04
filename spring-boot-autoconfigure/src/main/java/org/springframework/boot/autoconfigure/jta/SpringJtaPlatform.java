@@ -10,18 +10,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 /**
- * Generic Hibernate
- * {@link org.hibernate.engine.transaction.jta.platform.internal.AbstractJtaPlatform}
- * implementation that simply resolves the JTA {@link javax.transaction.UserTransaction}
- * and {@link javax.transaction.TransactionManager} from the Spring-configured
- * {@link org.springframework.transaction.jta.JtaTransactionManager} implementation.
+ * Generic Hibernate {@link AbstractJtaPlatform} implementation that simply resolves the
+ * JTA {@link UserTransaction} and {@link TransactionManager} from the Spring-configured
+ * {@link JtaTransactionManager} implementation.
  * <p>
- * A valid {@link org.springframework.transaction.jta.JtaTransactionManager} will expose
- * at a minimum a {@link javax.transaction.UserTransaction}. Sometimes a
+ * A valid {@link JtaTransactionManager} will expose at a minimum a
+ * {@link javax.transaction.UserTransaction}. Sometimes a
  * {@link javax.transaction.UserTransaction} implements the
  * {@link javax.transaction.TransactionManager} contract, and the
- * {@link org.springframework.transaction.jta.JtaTransactionManager} is smart enough to
- * test for that.
+ * {@link JtaTransactionManager} is smart enough to test for that.
  *
  * @author Josh Long
  */

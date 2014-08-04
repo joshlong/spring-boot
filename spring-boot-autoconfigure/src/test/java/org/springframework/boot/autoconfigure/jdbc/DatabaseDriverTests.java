@@ -20,8 +20,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 /**
  * Tests for {@link DatabaseDriver}.
@@ -49,16 +51,14 @@ public class DatabaseDriverTests {
 	}
 
 	@Test
-	public void failureOnNullJdbcUrl() {
-		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("JdbcUrl must not be null");
-		DatabaseDriver.fromJdbcUrl(null);
+	public void unknownOnNullJdbcUrl() {
+		assertThat(DatabaseDriver.fromJdbcUrl(null), equalTo(DatabaseDriver.UNKNOWN));
 	}
 
 	@Test
 	public void failureOnMalformedJdbcUrl() {
 		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("JdbcUrl must start with");
+		this.thrown.expectMessage("URL must start with");
 		DatabaseDriver.fromJdbcUrl("malformed:url");
 	}
 
