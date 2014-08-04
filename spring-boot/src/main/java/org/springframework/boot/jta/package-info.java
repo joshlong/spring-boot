@@ -14,22 +14,8 @@
  * limitations under the License.
  */
 
-package sample.bitronix2;
-
-import javax.sql.XADataSource;
-
-import org.springframework.boot.jta.bitronix.PoolingDataSourceBean;
-
 /**
- * @author pwebb
+ * Support for the Java Transaction API.
  */
-public class BitronixDataSourcePostProcessor extends AbstractXaPostProcessor<XADataSource, PoolingDataSourceBean> {
+package org.springframework.boot.jta;
 
-	@Override
-	protected PoolingDataSourceBean adapt(XADataSource source) {
-		PoolingDataSourceBean bean = new PoolingDataSourceBean();
-		bean.setDataSource(source);
-		return bean;
-	}
-
-}

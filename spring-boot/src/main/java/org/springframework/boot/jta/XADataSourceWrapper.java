@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-package sample.bitronix2;
+package org.springframework.boot.jta;
 
+import javax.sql.DataSource;
 import javax.sql.XADataSource;
-
-import org.springframework.boot.jta.bitronix.PoolingDataSourceBean;
+import javax.transaction.TransactionManager;
 
 /**
- * @author pwebb
+ * Strategy interface used to wrap a JMS {@link XADataSource} enrolling it with a
+ * {@link TransactionManager}.
+ *
+ * @author Phillip Webb
  */
-public class BitronixDataSourcePostProcessor extends AbstractXaPostProcessor<XADataSource, PoolingDataSourceBean> {
+public interface XADataSourceWrapper {
 
-	@Override
-	protected PoolingDataSourceBean adapt(XADataSource source) {
-		PoolingDataSourceBean bean = new PoolingDataSourceBean();
-		bean.setDataSource(source);
-		return bean;
-	}
+	/**
+	 * Wrap the specific {@link XADataSource} and enroll it with a
+	 * {@link TransactionManager}.
+	 * @param dataSource the data source to wrap
+	 * @return the wrapped data source
+	 */
+	DataSource wrapDataSource(XADataSource dataSource);
 
 }

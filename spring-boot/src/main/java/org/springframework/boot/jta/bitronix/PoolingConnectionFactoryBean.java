@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.boot.autoconfigure.jta.bitronix;
+package org.springframework.boot.jta.bitronix;
 
 import java.util.Properties;
 

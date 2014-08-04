@@ -24,28 +24,27 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 /**
- * Tests for {@link DriverClassNameProvider}.
+ * Tests for {@link DatabaseDriver}.
  *
+ * @author Phillip Webb
  * @author Maciej Walkowiak
  */
-public class DriverClassNameProviderTests {
-
-	private DriverClassNameProvider provider = new DriverClassNameProvider();
+public class DatabaseDriverTests {
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void classNameForKnownDatabase() {
-		String driverClassName = this.provider
-				.getDriverClassName("jdbc:postgresql://hostname/dbname");
+		String driverClassName = DatabaseDriver.fromJdbcUrl(
+				"jdbc:postgresql://hostname/dbname").getDriverClassName();
 		assertEquals("org.postgresql.Driver", driverClassName);
 	}
 
 	@Test
-	public void nullForUnknownDatabase() {
-		String driverClassName = this.provider
-				.getDriverClassName("jdbc:unknowndb://hostname/dbname");
+	public void nullClassNameForUnknownDatabase() {
+		String driverClassName = DatabaseDriver.fromJdbcUrl(
+				"jdbc:unknowndb://hostname/dbname").getDriverClassName();
 		assertNull(driverClassName);
 	}
 
@@ -53,14 +52,14 @@ public class DriverClassNameProviderTests {
 	public void failureOnNullJdbcUrl() {
 		this.thrown.expect(IllegalArgumentException.class);
 		this.thrown.expectMessage("JdbcUrl must not be null");
-		this.provider.getDriverClassName(null);
+		DatabaseDriver.fromJdbcUrl(null);
 	}
 
 	@Test
 	public void failureOnMalformedJdbcUrl() {
 		this.thrown.expect(IllegalArgumentException.class);
 		this.thrown.expectMessage("JdbcUrl must start with");
-		this.provider.getDriverClassName("malformed:url");
+		DatabaseDriver.fromJdbcUrl("malformed:url");
 	}
 
 }

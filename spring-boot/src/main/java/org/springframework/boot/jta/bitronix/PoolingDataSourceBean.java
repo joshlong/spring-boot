@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.boot.autoconfigure.jta.bitronix;
+package org.springframework.boot.jta.bitronix;
 
 import java.io.PrintWriter;
 import java.sql.SQLException;
@@ -77,7 +77,6 @@ public class PoolingDataSourceBean extends PoolingDataSource implements BeanName
 		if (!StringUtils.hasLength(getUniqueName())) {
 			setUniqueName(this.beanName);
 		}
-		init();
 	}
 
 	public void setDataSource(XADataSource dataSource) {
