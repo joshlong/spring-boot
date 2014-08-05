@@ -8,7 +8,6 @@ import org.springframework.util.Assert;
 
 import bitronix.tm.BitronixTransactionManager;
 
-import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple;
 import com.atomikos.icatch.jta.UserTransactionManager;
 
 /**
@@ -36,11 +35,6 @@ public class JtaAutoConfigurationTests {
 	public void testBitronixAutoConfiguration() throws Exception {
 		testContextFor(BitronixJtaAutoConfiguration.class,
 				BitronixTransactionManager.class);
-	}
-
-	@Test
-	public void testArjunaAutoConfiguration() throws Exception {
-		testContextFor(ArjunaJtaAutoConfiguration.class, TransactionManagerImple.class);
 	}
 
 	private AnnotationConfigApplicationContext buildApplicationContextFrom(

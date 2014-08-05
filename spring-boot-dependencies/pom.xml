@@ -95,7 +95,6 @@
 		<mockito.version>1.9.5</mockito.version>
 		<mongodb.version>2.12.2</mongodb.version>
 		<mysql.version>5.1.31</mysql.version>
-		<narayana.version>5.0.2.Final</narayana.version>
 		<reactor.version>1.1.2.RELEASE</reactor.version>
 		<servlet-api.version>3.0.1</servlet-api.version>
 		<slf4j.version>1.7.7</slf4j.version>
@@ -883,16 +882,6 @@
 				<groupId>org.javassist</groupId>
 				<artifactId>javassist</artifactId>
 				<version>${javassist.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.jboss</groupId>
-				<artifactId>jboss-transaction-spi</artifactId>
-				<version>${jboss-transaction-spi.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.jboss.narayana.jta</groupId>
-				<artifactId>narayana-jta</artifactId>
-				<version>${narayana.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.jolokia</groupId>

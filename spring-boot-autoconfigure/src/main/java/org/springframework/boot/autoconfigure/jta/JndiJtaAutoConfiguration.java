@@ -24,7 +24,7 @@ import org.springframework.transaction.jta.JtaTransactionManager;
 @Conditional(JtaCondition.class)
 @ConditionalOnClass(name = "javax.ejb.Singleton")
 @ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
-@AutoConfigureAfter({ ArjunaJtaAutoConfiguration.class, BitronixJtaAutoConfiguration.class,
+@AutoConfigureAfter({ BitronixJtaAutoConfiguration.class,
 		AtomikosJtaAutoConfiguration.class })
 public class JndiJtaAutoConfiguration extends AbstractJtaAutoConfiguration {
 
