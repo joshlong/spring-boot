@@ -34,6 +34,6 @@ public interface XADataSourceWrapper {
 	 * @param dataSource the data source to wrap
 	 * @return the wrapped data source
 	 */
-	DataSource wrapDataSource(XADataSource dataSource);
+	DataSource wrapDataSource(XADataSource dataSource) throws Exception;
 
 }

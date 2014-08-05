@@ -6,10 +6,8 @@ import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.sql.XADataSource;
 
 import org.apache.activemq.ActiveMQXAConnectionFactory;
-import org.postgresql.xa.PGXADataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanNameAware;
@@ -18,7 +16,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.jta.bitronix.PoolingConnectionFactoryBean;
-import org.springframework.boot.jta.bitronix.PoolingDataSourceBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -57,19 +54,6 @@ public class SampleBitronixApplication {
 		source.setBrokerURL("tcp://localhost:61616");
 		PoolingConnectionFactoryBean bean = new PoolingConnectionFactoryBean();
 		bean.setConnectionFactory(source);
-		return bean;
-	}
-
-	@Bean
-	public PoolingDataSourceBean dataSource() {
-		PGXADataSource xa = new PGXADataSource();
-		xa.setServerName("127.0.0.1");
-		xa.setDatabaseName("crm");
-		xa.setUser("crm");
-		xa.setPassword("crm");
-		XADataSource source = xa;
-		PoolingDataSourceBean bean = new PoolingDataSourceBean();
-		bean.setDataSource(source);
 		return bean;
 	}
 

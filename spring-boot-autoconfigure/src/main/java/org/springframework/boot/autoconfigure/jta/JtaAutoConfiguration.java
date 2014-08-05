@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-package sample.bitronix2;
+package org.springframework.boot.autoconfigure.jta;
 
-import javax.sql.XADataSource;
-
-import org.springframework.boot.jta.bitronix.PoolingDataSourceBean;
+import org.springframework.context.annotation.Import;
 
 /**
- * @author pwebb
+ * @author Josh Long
+ * @author Phillip Webb
  */
-public class BitronixDataSourcePostProcessor extends AbstractXaPostProcessor<XADataSource, PoolingDataSourceBean> {
-
-	@Override
-	protected PoolingDataSourceBean adapt(XADataSource source) {
-		PoolingDataSourceBean bean = new PoolingDataSourceBean();
-		bean.setDataSource(source);
-		return bean;
-	}
+@Import(BitronixJtaConfiguration.class)
+public class JtaAutoConfiguration {
 
 }

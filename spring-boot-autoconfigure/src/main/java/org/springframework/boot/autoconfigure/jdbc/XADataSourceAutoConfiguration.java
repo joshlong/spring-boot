@@ -24,11 +24,13 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.jta.JtaAutoConfiguration;
 import org.springframework.boot.bind.RelaxedDataBinder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.jta.XADataSourceWrapper;
@@ -44,6 +46,7 @@ import org.springframework.util.StringUtils;
  * @author Josh Long
  */
 @AutoConfigureBefore(DataSourceAutoConfiguration.class)
+@AutoConfigureAfter(JtaAutoConfiguration.class)
 @EnableConfigurationProperties(DataSourceProperties.class)
 @ConditionalOnClass(TransactionManager.class)
 @ConditionalOnBean(XADataSourceWrapper.class)
@@ -62,7 +65,7 @@ public class XADataSourceAutoConfiguration implements BeanClassLoaderAware {
 	private ClassLoader classLoader;
 
 	@Bean
-	public DataSource dataSource() {
+	public DataSource dataSource() throws Exception {
 		XADataSource xaDataSource = this.xaDataSource;
 		if (xaDataSource == null) {
 			xaDataSource = createXaDataSource();
