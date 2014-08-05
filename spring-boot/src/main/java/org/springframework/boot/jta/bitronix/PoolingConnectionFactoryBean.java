@@ -23,6 +23,7 @@ import javax.jms.XAConnection;
 import javax.jms.XAConnectionFactory;
 
 import org.springframework.beans.factory.BeanNameAware;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.StringUtils;
 
@@ -31,7 +32,7 @@ import bitronix.tm.resource.common.XAStatefulHolder;
 import bitronix.tm.resource.jms.PoolingConnectionFactory;
 
 /**
- * Bean friendly version of {@link PoolingConnectionFactory}. Provides sensible defaults
+ * Spring friendly version of {@link PoolingConnectionFactory}. Provides sensible defaults
  * and also supports direct wrapping of a {@link XAConnectionFactory} instance.
  *
  * @author Phillip Webb
@@ -39,7 +40,7 @@ import bitronix.tm.resource.jms.PoolingConnectionFactory;
  * @since 1.2.0
  */
 public class PoolingConnectionFactoryBean extends PoolingConnectionFactory implements
-		BeanNameAware, InitializingBean {
+		BeanNameAware, InitializingBean, DisposableBean {
 
 	private static ThreadLocal<PoolingConnectionFactoryBean> source = new ThreadLocal<PoolingConnectionFactoryBean>();
 
@@ -75,6 +76,12 @@ public class PoolingConnectionFactoryBean extends PoolingConnectionFactory imple
 		if (!StringUtils.hasLength(getUniqueName())) {
 			setUniqueName(this.beanName);
 		}
+		init();
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		close();
 	}
 
 	public void setConnectionFactory(XAConnectionFactory connectionFactory) {

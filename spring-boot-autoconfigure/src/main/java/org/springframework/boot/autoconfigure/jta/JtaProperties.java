@@ -16,4 +16,6 @@ public class JtaProperties {
 
 	public static final String PREFIX = "spring.jta";
 
+	// FIXME folder
+
 }

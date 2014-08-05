@@ -34,8 +34,8 @@ import bitronix.tm.resource.common.XAStatefulHolder;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
 
 /**
- * Bean friendly version of {@link PoolingDataSource}. Provides sensible defaults and also
- * supports direct wrapping of a {@link XADataSource} instance.
+ * Spring friendly version of {@link PoolingDataSource}. Provides sensible defaults and
+ * also supports direct wrapping of a {@link XADataSource} instance.
  *
  * @author Phillip Webb
  * @author Josh Long

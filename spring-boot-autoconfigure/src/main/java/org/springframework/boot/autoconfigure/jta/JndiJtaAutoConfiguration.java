@@ -1,10 +1,7 @@
 package org.springframework.boot.autoconfigure.jta;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.transaction.PlatformTransactionManager;
 
 /**
  * Registers the standard
@@ -20,9 +17,7 @@ import org.springframework.transaction.PlatformTransactionManager;
  * @since 1.2.0
  */
 @Configuration
-@Conditional(JtaCondition.class)
 @ConditionalOnClass(name = "javax.ejb.Singleton")
-@ConditionalOnMissingBean(name = "transactionManager", value = PlatformTransactionManager.class)
 public class JndiJtaAutoConfiguration {
 
 	// @Override

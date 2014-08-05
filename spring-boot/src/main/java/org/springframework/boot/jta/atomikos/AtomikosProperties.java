@@ -23,7 +23,7 @@ import java.util.TreeMap;
 /**
  * Bean friendly variant of <a
  * href="http://www.atomikos.com/Documentation/JtaProperties">Atomikos configuration
- * properties</a>. Allows for setter based configuration and it amiable to relaxed data
+ * properties</a>. Allows for setter based configuration and is amiable to relaxed data
  * binding.
  *
  * @author Phillip Webb

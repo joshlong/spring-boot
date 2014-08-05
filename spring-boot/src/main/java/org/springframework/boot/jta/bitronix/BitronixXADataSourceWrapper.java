@@ -16,22 +16,21 @@
 
 package org.springframework.boot.jta.bitronix;
 
-import javax.sql.DataSource;
 import javax.sql.XADataSource;
 
 import org.springframework.boot.jta.XADataSourceWrapper;
 
 /**
- * {@link XADataSourceWrapper} that uses a {@link PoolingDataSourceBean} to wrap a
- * {@link XADataSource}.
+ * {@link XADataSourceWrapper} that uses a Bitronix {@link PoolingDataSourceBean} to wrap
+ * a {@link XADataSource}.
  *
  * @author Phillip Webb
  * @since 1.2.0
  */
-public class PollingDataSourceXAWrapper implements XADataSourceWrapper {
+public class BitronixXADataSourceWrapper implements XADataSourceWrapper {
 
 	@Override
-	public DataSource wrapDataSource(XADataSource dataSource) throws Exception {
+	public PoolingDataSourceBean wrapDataSource(XADataSource dataSource) throws Exception {
 		PoolingDataSourceBean pool = new PoolingDataSourceBean();
 		pool.setDataSource(dataSource);
 		return pool;

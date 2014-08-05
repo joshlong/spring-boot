@@ -32,7 +32,12 @@ import static org.mockito.Mockito.verify;
  */
 public class PoolingConnectionFactoryBeanTests {
 
-	private PoolingConnectionFactoryBean bean = new PoolingConnectionFactoryBean();
+	private PoolingConnectionFactoryBean bean = new PoolingConnectionFactoryBean() {
+		@Override
+		public synchronized void init() {
+			// Stub out for the tests
+		};
+	};
 
 	@Test
 	public void sensbileDefaults() throws Exception {

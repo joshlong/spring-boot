@@ -8,7 +8,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
 import org.apache.activemq.ActiveMQXAConnectionFactory;
-import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanNameAware;
@@ -30,7 +29,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.atomikos.jdbc.AtomikosDataSourceBean;
 import com.atomikos.jms.AtomikosConnectionFactoryBean;
 
 /**
@@ -55,29 +53,6 @@ public class SampleAtomikosApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(SampleAtomikosApplication.class, args);
-	}
-
-	/**
-	 * The Atomikos project provide a wrapper {@link javax.sql.DataSource} implementation.
-	 * The {@link com.atomikos.jdbc.AtomikosDataSourceBean} expects a reference to a
-	 * {@link javax.sql.XADataSource}.
-	 */
-	@Bean(initMethod = "init", destroyMethod = "close")
-	public AtomikosDataSourceBean dataSource() {
-		AtomikosDataSourceBean xa = new AtomikosDataSourceBean();
-		xa.setXaDataSource(targetDataSource());
-		xa.setUniqueResourceName("dataSource");
-		xa.setTestQuery("select now()");
-		xa.setPoolSize(this.poolSize);
-		return xa;
-	}
-
-	private JdbcDataSource targetDataSource() {
-		JdbcDataSource xaDataSource = new JdbcDataSource();
-		xaDataSource.setPassword("sa");
-		xaDataSource.setURL("jdbc:h2:tcp://localhost/~/crm");
-		xaDataSource.setUser("sa");
-		return xaDataSource;
 	}
 
 	/**

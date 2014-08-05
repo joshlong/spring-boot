@@ -14,16 +14,30 @@
  * limitations under the License.
  */
 
-package org.springframework.boot.autoconfigure.jta;
+package org.springframework.boot.jta.atomikos;
 
-import org.springframework.context.annotation.Import;
+import javax.sql.XADataSource;
+
+import org.springframework.boot.jta.XADataSourceWrapper;
+
+import com.atomikos.jdbc.AtomikosDataSourceBean;
 
 /**
- * @author Josh Long
+ * {@link XADataSourceWrapper} that uses an {@link AtomikosDataSourceBean} to wrap a
+ * {@link XADataSource}.
+ *
  * @author Phillip Webb
  * @since 1.2.0
  */
-@Import({ BitronixJtaConfiguration.class, AtomikosJtaConfiguration.class })
-public class JtaAutoConfiguration {
+public class AtomikosXADataSourceWrapper implements XADataSourceWrapper {
+
+	@Override
+	public AtomikosDataSourceBean wrapDataSource(XADataSource dataSource)
+			throws Exception {
+		AtomikosDataSourceBean bean = new AtomikosDataSourceBean();
+		bean.setXaDataSource(dataSource);
+		bean.setUniqueResourceName("dataSource");
+		return bean;
+	}
 
 }
