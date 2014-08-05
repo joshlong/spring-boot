@@ -36,6 +36,7 @@ import bitronix.tm.resource.jms.PoolingConnectionFactory;
  *
  * @author Phillip Webb
  * @author Josh Long
+ * @since 1.2.0
  */
 public class PoolingConnectionFactoryBean extends PoolingConnectionFactory implements
 		BeanNameAware, InitializingBean {

@@ -25,6 +25,7 @@ import javax.transaction.TransactionManager;
  * {@link TransactionManager}.
  *
  * @author Phillip Webb
+ * @since 1.2.0
  */
 public interface XADataSourceWrapper {
 

@@ -14,6 +14,7 @@ import org.springframework.util.ClassUtils;
  * there. Use in conjunction with other tests.
  *
  * @author Josh Long
+ * @since 1.2.0
  */
 public class JtaCondition extends SpringBootCondition {
 

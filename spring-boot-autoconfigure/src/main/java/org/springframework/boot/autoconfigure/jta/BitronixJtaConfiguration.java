@@ -7,6 +7,7 @@ import javax.transaction.TransactionManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jta.XADataSourceWrapper;
 import org.springframework.boot.jta.bitronix.PollingDataSourceXAWrapper;
 import org.springframework.context.annotation.Bean;
@@ -20,11 +21,11 @@ import bitronix.tm.TransactionManagerServices;
 import bitronix.tm.jndi.BitronixContext;
 
 /**
- * Registers the <A href="http://docs.codehaus.org/display/BTM/Home">Bitronix JTA </A>
- * implementation and configures JTA support
+ * JTA Configuration for <A href="http://docs.codehaus.org/display/BTM/Home">Bitronix</A>.
  *
  * @author Josh Long
  * @author Phillip Webb
+ * @since 1.2.0
  */
 @Configuration
 @ConditionalOnClass(BitronixContext.class)
@@ -38,6 +39,7 @@ class BitronixJtaConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConfigurationProperties(prefix = JtaProperties.PREFIX)
 	public bitronix.tm.Configuration bitronixConfiguration(Environment environment) {
 		bitronix.tm.Configuration configuration = TransactionManagerServices
 				.getConfiguration();

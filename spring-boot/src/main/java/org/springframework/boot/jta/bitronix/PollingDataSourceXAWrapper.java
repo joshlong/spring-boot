@@ -19,7 +19,6 @@ package org.springframework.boot.jta.bitronix;
 import javax.sql.DataSource;
 import javax.sql.XADataSource;
 
-import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.boot.jta.XADataSourceWrapper;
 
 /**
@@ -27,28 +26,15 @@ import org.springframework.boot.jta.XADataSourceWrapper;
  * {@link XADataSource}.
  *
  * @author Phillip Webb
+ * @since 1.2.0
  */
-public class PollingDataSourceXAWrapper implements XADataSourceWrapper, BeanNameAware {
-
-	private String beanName;
+public class PollingDataSourceXAWrapper implements XADataSourceWrapper {
 
 	@Override
 	public DataSource wrapDataSource(XADataSource dataSource) throws Exception {
 		PoolingDataSourceBean pool = new PoolingDataSourceBean();
-		pool.setBeanName(this.beanName);
 		pool.setDataSource(dataSource);
-		customize(pool);
-		pool.afterPropertiesSet();
-		pool.init();
 		return pool;
-	}
-
-	protected void customize(PoolingDataSourceBean pool) {
-	}
-
-	@Override
-	public void setBeanName(String name) {
-		this.beanName = name;
 	}
 
 }

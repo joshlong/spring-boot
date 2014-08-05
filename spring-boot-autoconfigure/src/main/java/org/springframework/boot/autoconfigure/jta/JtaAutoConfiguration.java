@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Import;
 /**
  * @author Josh Long
  * @author Phillip Webb
+ * @since 1.2.0
  */
 @Import(BitronixJtaConfiguration.class)
 public class JtaAutoConfiguration {

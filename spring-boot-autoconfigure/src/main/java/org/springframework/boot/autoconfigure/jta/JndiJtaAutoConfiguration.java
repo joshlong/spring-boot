@@ -17,6 +17,7 @@ import org.springframework.transaction.PlatformTransactionManager;
  * {@link javax.jms.ConnectionFactory}.
  *
  * @author Josh Long
+ * @since 1.2.0
  */
 @Configuration
 @Conditional(JtaCondition.class)

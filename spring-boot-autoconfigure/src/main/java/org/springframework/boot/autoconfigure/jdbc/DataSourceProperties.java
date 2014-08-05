@@ -34,8 +34,10 @@ import org.springframework.util.StringUtils;
  * @author Maciej Walkowiak
  * @since 1.1.0
  */
-@ConfigurationProperties(prefix = DataSourceAutoConfiguration.CONFIGURATION_PREFIX)
+@ConfigurationProperties(prefix = DataSourceProperties.PREFIX)
 public class DataSourceProperties implements BeanClassLoaderAware, InitializingBean {
+
+	public static final String PREFIX = "spring.datasource";
 
 	private String driverClassName;
 

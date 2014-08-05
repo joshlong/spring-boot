@@ -14,27 +14,30 @@
  * limitations under the License.
  */
 
-package org.springframework.boot.jta;
-
-import javax.jms.ConnectionFactory;
-import javax.jms.XAConnectionFactory;
-import javax.transaction.TransactionManager;
+package org.springframework.boot.jta.atomikos;
 
 /**
- * Strategy interface used to wrap a JMS {@link XAConnectionFactory} enrolling it with a
- * {@link TransactionManager}.
+ * Logging levels supported by Atomikos.
  *
  * @author Phillip Webb
+ * @see AtomikosProperties
  * @since 1.2.0
  */
-public interface XAConnectionFactoryWrapper {
+public enum AtomikosLoggingLevel {
 
 	/**
-	 * Wrap the specific {@link XAConnectionFactory} and enroll it with a
-	 * {@link TransactionManager}.
-	 * @param connectionFactory the connection factory to wrap
-	 * @return the wrapped connection factory
+	 * Debug Level.
 	 */
-	ConnectionFactory wrapConnectionFactory(XAConnectionFactory connectionFactory);
+	DEBUG,
+
+	/**
+	 * Info Level.
+	 */
+	INFO,
+
+	/**
+	 * Warning Level.
+	 */
+	WARN
 
 }
