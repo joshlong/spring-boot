@@ -16,10 +16,7 @@
 
 package org.springframework.boot.autoconfigure.jms.activemq;
 
-import javax.jms.ConnectionFactory;
-
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.pool.PooledConnectionFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -42,17 +39,10 @@ public class ActiveMQConnectionFactoryFactory {
 		this.properties = properties;
 	}
 
-	public <T extends ActiveMQConnectionFactory> ConnectionFactory createConnectionFactory(
+	public <T extends ActiveMQConnectionFactory> T createConnectionFactory(
 			Class<T> factoryClass) {
-		T connectionFactory;
 		try {
-			connectionFactory = doCreateConnectionFactory(factoryClass);
-			if (this.properties.isPooled()) {
-				PooledConnectionFactory pool = new PooledConnectionFactory();
-				pool.setConnectionFactory(connectionFactory);
-				return pool;
-			}
-			return connectionFactory;
+			return doCreateConnectionFactory(factoryClass);
 		}
 		catch (Exception ex) {
 			throw new IllegalStateException("Unable to create ActiveMQConnectionFactory",

@@ -37,9 +37,10 @@ import org.springframework.context.annotation.Configuration;
 class ActiveMQXAConfiguration {
 
 	@Bean
-	public ConnectionFactory jmsConnectionFactory(ActiveMQProperties properties) {
-		return new ActiveMQConnectionFactoryFactory(properties)
-				.createConnectionFactory(ActiveMQXAConnectionFactory.class);
+	public ConnectionFactory jmsConnectionFactory(ActiveMQProperties properties,
+			XAConnectionFactoryWrapper wrapper) throws Exception {
+		ActiveMQXAConnectionFactory connectionFactory = new ActiveMQConnectionFactoryFactory(
+				properties).createConnectionFactory(ActiveMQXAConnectionFactory.class);
+		return wrapper.wrapConnectionFactory(connectionFactory);
 	}
-
 }

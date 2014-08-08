@@ -19,6 +19,7 @@ package org.springframework.boot.autoconfigure.jms.activemq;
 import javax.jms.ConnectionFactory;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.pool.PooledConnectionFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -32,8 +33,14 @@ class ActiveMQConfiguration {
 
 	@Bean
 	public ConnectionFactory jmsConnectionFactory(ActiveMQProperties properties) {
-		return new ActiveMQConnectionFactoryFactory(properties)
-				.createConnectionFactory(ActiveMQConnectionFactory.class);
+		ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactoryFactory(
+				properties).createConnectionFactory(ActiveMQConnectionFactory.class);
+		if (properties.isPooled()) {
+			PooledConnectionFactory pool = new PooledConnectionFactory();
+			pool.setConnectionFactory(connectionFactory);
+			return pool;
+		}
+		return connectionFactory;
 	}
 
 }
