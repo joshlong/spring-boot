@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-package org.springframework.boot.jta.atomikos;
+package org.springframework.boot.jta.bitronix;
 
-import javax.sql.XADataSource;
+import javax.jms.ConnectionFactory;
+import javax.jms.XAConnectionFactory;
 
-import org.springframework.boot.jta.XADataSourceWrapper;
+import org.springframework.boot.jta.XAConnectionFactoryWrapper;
 
 /**
- * {@link XADataSourceWrapper} that uses an {@link AtomikosDataSourceBean} to wrap a
- * {@link XADataSource}.
+ * {@link XAConnectionFactoryWrapper} that uses a Bitronix
+ * {@link PoolingConnectionFactoryBean} to wrap a {@link XAConnectionFactory}.
  *
  * @author Phillip Webb
  * @since 1.2.0
  */
-public class AtomikosXADataSourceWrapper implements XADataSourceWrapper {
+public class BitronixXAConnectionFactoryWrapper implements XAConnectionFactoryWrapper {
 
 	@Override
-	public AtomikosDataSourceBean wrapDataSource(XADataSource dataSource)
-			throws Exception {
-		AtomikosDataSourceBean bean = new AtomikosDataSourceBean();
-		bean.setXaDataSource(dataSource);
-		return bean;
+	public ConnectionFactory wrapConnectionFactory(XAConnectionFactory connectionFactory) {
+		PoolingConnectionFactoryBean pool = new PoolingConnectionFactoryBean();
+		pool.setConnectionFactory(connectionFactory);
+		return pool;
 	}
 
 }

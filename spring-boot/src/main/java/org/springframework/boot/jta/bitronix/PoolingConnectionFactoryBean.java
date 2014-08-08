@@ -90,6 +90,10 @@ public class PoolingConnectionFactoryBean extends PoolingConnectionFactory imple
 		setDriverProperties(new Properties());
 	}
 
+	protected final XAConnectionFactory getConnectionFactory() {
+		return this.connectionFactory;
+	}
+
 	@Override
 	public XAStatefulHolder createPooledConnection(Object xaFactory, ResourceBean bean)
 			throws Exception {

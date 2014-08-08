@@ -16,25 +16,31 @@
 
 package org.springframework.boot.jta.atomikos;
 
+import javax.sql.DataSource;
 import javax.sql.XADataSource;
 
-import org.springframework.boot.jta.XADataSourceWrapper;
+import org.junit.Test;
+
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 /**
- * {@link XADataSourceWrapper} that uses an {@link AtomikosDataSourceBean} to wrap a
- * {@link XADataSource}.
+ * Tests for {@link AtomikosXADataSourceWrapper}.
  *
  * @author Phillip Webb
- * @since 1.2.0
  */
-public class AtomikosXADataSourceWrapper implements XADataSourceWrapper {
+public class AtomikosXADataSourceWrapperTests {
 
-	@Override
-	public AtomikosDataSourceBean wrapDataSource(XADataSource dataSource)
-			throws Exception {
-		AtomikosDataSourceBean bean = new AtomikosDataSourceBean();
-		bean.setXaDataSource(dataSource);
-		return bean;
+	@Test
+	public void wrap() throws Exception {
+		XADataSource dataSource = mock(XADataSource.class);
+		AtomikosXADataSourceWrapper wrapper = new AtomikosXADataSourceWrapper();
+		DataSource wrapped = wrapper.wrapDataSource(dataSource);
+		assertThat(wrapped, instanceOf(AtomikosDataSourceBean.class));
+		assertThat(((AtomikosDataSourceBean) wrapped).getXaDataSource(),
+				sameInstance(dataSource));
 	}
 
 }

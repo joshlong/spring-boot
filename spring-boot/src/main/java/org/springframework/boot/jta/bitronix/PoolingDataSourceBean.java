@@ -86,6 +86,10 @@ public class PoolingDataSourceBean extends PoolingDataSource implements BeanName
 		setDriverProperties(new Properties());
 	}
 
+	protected final XADataSource getDataSource() {
+		return this.dataSource;
+	}
+
 	@Override
 	public XAStatefulHolder createPooledConnection(Object xaFactory, ResourceBean bean)
 			throws Exception {

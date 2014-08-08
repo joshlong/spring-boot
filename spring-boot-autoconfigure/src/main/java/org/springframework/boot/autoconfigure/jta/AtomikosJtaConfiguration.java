@@ -8,9 +8,11 @@ import javax.transaction.UserTransaction;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jta.XAConnectionFactoryWrapper;
 import org.springframework.boot.jta.XADataSourceWrapper;
 import org.springframework.boot.jta.atomikos.AtomikosDependsOnBeanFactoryPostProcessor;
 import org.springframework.boot.jta.atomikos.AtomikosProperties;
+import org.springframework.boot.jta.atomikos.AtomikosXAConnectionFactoryWrapper;
 import org.springframework.boot.jta.atomikos.AtomikosXADataSourceWrapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -74,6 +76,12 @@ class AtomikosJtaConfiguration {
 	@ConditionalOnMissingBean
 	public XADataSourceWrapper xaDataSourceWrapper() {
 		return new AtomikosXADataSourceWrapper();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public XAConnectionFactoryWrapper xaConnectionFactoryWrapper() {
+		return new AtomikosXAConnectionFactoryWrapper();
 	}
 
 	@Bean

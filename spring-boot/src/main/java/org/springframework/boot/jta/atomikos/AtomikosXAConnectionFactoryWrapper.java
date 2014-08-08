@@ -16,24 +16,24 @@
 
 package org.springframework.boot.jta.atomikos;
 
-import javax.sql.XADataSource;
+import javax.jms.ConnectionFactory;
+import javax.jms.XAConnectionFactory;
 
-import org.springframework.boot.jta.XADataSourceWrapper;
+import org.springframework.boot.jta.XAConnectionFactoryWrapper;
 
 /**
- * {@link XADataSourceWrapper} that uses an {@link AtomikosDataSourceBean} to wrap a
- * {@link XADataSource}.
+ * {@link XAConnectionFactoryWrapper} that uses an {@link AtomikosConnectionFactoryBean}
+ * to wrap a {@link XAConnectionFactory}.
  *
  * @author Phillip Webb
  * @since 1.2.0
  */
-public class AtomikosXADataSourceWrapper implements XADataSourceWrapper {
+public class AtomikosXAConnectionFactoryWrapper implements XAConnectionFactoryWrapper {
 
 	@Override
-	public AtomikosDataSourceBean wrapDataSource(XADataSource dataSource)
-			throws Exception {
-		AtomikosDataSourceBean bean = new AtomikosDataSourceBean();
-		bean.setXaDataSource(dataSource);
+	public ConnectionFactory wrapConnectionFactory(XAConnectionFactory connectionFactory) {
+		AtomikosConnectionFactoryBean bean = new AtomikosConnectionFactoryBean();
+		bean.setXaConnectionFactory(connectionFactory);
 		return bean;
 	}
 
